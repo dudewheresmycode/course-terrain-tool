@@ -11,6 +11,7 @@
     "client": "npm run debug --workspace=client",
     "server": "npm start --workspace=server",
     "build": "npm run build --workspace=client",
+    "develop": "CTC_DEBUG=1 concurrently --kill-others 'npm run debug --workspace=client' 'npm start --workspace=server'",
     "start": "npm start --workspace=server"
   },
   "keywords": [],

@@ -1,31 +1,21 @@
 import path from 'path';
 import express from 'express';
 import expressWs from 'express-ws';
-import dotEnv from 'dotenv';
 
-if (process.env.NODE_ENV !== 'production') {
-  dotEnv.config();
-  console.log(process.env);
-}
+import './utils/startup.js';
 
 import usgsSearch from './lib/usgs.js';
-import mapRender from './lib/mapRender.js';
 import { JobQueue } from './lib/jobs.js';
 
 const PORT = process.env.PORT || 3133;
+const DIST_PATH = path.resolve(process.cwd(), 'client/dist');
 
 const app = express();
 
 app.use(express.json());
 
-const distPath = path.resolve('../client/dist');
-console.log(distPath);
-
-// if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(distPath));
-  // app.get('/', express.static(path.join(process.cwd(), 'client/dist/index.html')));
-  app.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
-// }
+app.use(express.static(DIST_PATH));
+app.get('/', (req, res) => res.sendFile(path.join(DIST_PATH, 'index.html')));
 
 const expressWsInstace = expressWs(app);
 const allWss = expressWsInstace.getWss('/progress');
@@ -89,4 +79,11 @@ app.get('/api/search', async (req, res) => {
 //   res.json(result);
 // });
 
-app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  // we set CTC_DEBUG when we run the app in develop mode and 
+  // proxy the server behind the webpack dev server
+  // so we hide this log message to avoid confusion about which address the user sees
+  if (!process.env.CTC_DEBUG) {
+    console.log(`Server running at http://localhost:${PORT}`);
+  }
+});

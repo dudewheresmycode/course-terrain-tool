@@ -61,6 +61,7 @@ export class Job extends EventEmitter {
     // download all the terrain data files
     // const localFiles = await downloadBatchUrls();
     try {
+      // safety check
       if (!this.terrainDirectory) {
         throw new Error('Missing Terrain directory. Was the TERRAIN_DIR environment variable set?');
       }
