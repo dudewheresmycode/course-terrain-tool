@@ -1,0 +1,7 @@
+<GDAL_WMS>
+  <Service name="AGS">
+    <ServerUrl>https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer</ServerUrl>
+    <BBoxOrder>xyXY</BBoxOrder>
+    <SRS>3857</SRS>
+  </Service>
+</GDAL_WMS>

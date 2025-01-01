@@ -1,0 +1,9 @@
+services:
+  server:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      PORT: 3133
+    ports:
+      - 3133:3133

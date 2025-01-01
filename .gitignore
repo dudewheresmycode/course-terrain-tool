@@ -1,0 +1,6 @@
+node_modules
+_tmp
+.DS_*
+data
+.env*
+dist

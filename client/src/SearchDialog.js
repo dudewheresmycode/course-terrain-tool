@@ -1,0 +1,133 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import CircularProgress from '@mui/material/CircularProgress';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemButton from '@mui/material/ListItemButton';
+import Box from '@mui/material/Box';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import Avatar from '@mui/material/Avatar';
+import ImageIcon from '@mui/icons-material/Image';
+import PolylineIcon from '@mui/icons-material/Polyline';
+import { Chip, styled } from '@mui/material';
+
+const StyledListItem = styled(ListItem)({
+  padding: 0,
+  '.MuiListItemButton-root': {
+    paddingLeft: '1.5rem'
+  }
+});
+
+function SearchResultItem(props) {
+  const handleSelectSource = useCallback(async () => {
+    if (props.onSelect) {
+      props.onSelect(props.result);
+    }
+  }, []);
+  return (
+    <StyledListItem>
+      <ListItemButton onClick={handleSelectSource}>
+        <ListItemAvatar>
+          <Avatar>
+            {props.result.format === 'LAZ' ? <PolylineIcon /> : <ImageIcon />}
+          </Avatar>
+        </ListItemAvatar>
+        <ListItemText
+          primary={`${props.result.format} (${props.result.items.length})`}
+          secondary={`${props.result.group}, Published: ${props.result.publicationDate}`}
+        />
+        {props.result.format === 'LAZ' ? <Chip label="Recommended" />  : null}
+      </ListItemButton>
+    </StyledListItem>
+  )  
+}
+
+export default function SearchDialog(props) {
+  const [isPending, setIsPending] = useState(true);
+  const [results, setResults] = useState();
+
+  // const handleClickOpen = useCallback(() => {
+  //   setOpen(true);
+  // }, []);
+
+  // const handleClose = useCallback(() => {
+  //   setOpen(false);
+  // }, []);
+  const handleClose = useCallback(async () => {
+    setResults(undefined);
+    if (props.onClose) {
+      props.onClose();
+    }
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    console.log('handleSubmit', props.coordinates);
+    if (!props.coordinates) { return; }
+    const params = new URLSearchParams({
+      polygon: props.coordinates.outer.map(points => points.join(' ')).join(','),
+      center: props.coordinates.center
+    });
+    setResults(undefined);
+    // const res = await fetch(`/api/render?${params}`);
+    // console.log(res);
+  }, [props.coordinates]);
+
+  const fetchResults = useCallback(async () => {
+    console.log('fetchResults', props.coordinates);
+    if (!props.coordinates) { return; }
+    const params = new URLSearchParams({
+      polygon: props.coordinates.outer.map(points => points.join(' ')).join(','),
+      center: props.coordinates.center
+    });
+    const data = await fetch(`/api/search?${params}`).then(res => res.json());
+    console.log(data);
+    if (data) {
+      setResults(data);
+    }
+    setIsPending(false);
+  }, [props.coordinates]);
+  
+  useEffect(() => {
+    if (props.open && props.coordinates) {
+      console.log('fetch!');
+      setIsPending(true);
+      fetchResults();
+    }
+  }, [props.open]);
+
+  return (
+    <Dialog
+      {...props}
+      maxWidth="md"
+      scroll="paper"
+      fullWidth={true}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+    >
+      <DialogTitle id="alert-dialog-title">
+        {"Elevation Data Results"}
+      </DialogTitle>
+      <DialogContent sx={{px: 0}}>
+        {isPending ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>
+        ) : (
+          <List>
+            {results ? results.map(
+              (result, index) => 
+                <SearchResultItem onSelect={props.onSelect} result={result} key={index} />
+              ) : null
+            }
+          </List>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
