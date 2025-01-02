@@ -18,7 +18,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'win') }}
         run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
 
-      - name: Set vars on windows
+      - name: Set vars on macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $env:GITHUB_ENV
 
