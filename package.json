@@ -23,7 +23,6 @@
   "scripts": {
     "app:dir": "electron-builder --dir",
     "app:dist": "electron-builder",
-    "app:help": "electron-builder --help",
     "test": "echo \"Error: no test specified\" && exit 1",
     "client": "CLIENT_DEV_MODE=1 concurrently --kill-others  'npm run debug --workspace=client' 'npm run -w app start'",
     "server": "npm start --workspace=server",
