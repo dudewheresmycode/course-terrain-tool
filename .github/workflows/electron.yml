@@ -33,5 +33,5 @@ jobs:
       # - run: echo hello > path/to/artifact/world.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: my-app
+          name: ctt-${{ matrix.os }}
           path: dist
