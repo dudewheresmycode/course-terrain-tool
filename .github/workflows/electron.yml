@@ -33,5 +33,5 @@ jobs:
       # - run: echo hello > path/to/artifact/world.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: build.zip
-          path: ./*.zip
+          name: my-app
+          path: dist
