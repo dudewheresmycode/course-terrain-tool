@@ -9,6 +9,7 @@
   "main": "app/main.js",
   "build": {
     "productName": "Course Terrain Tool",
+    "icon": "./resources/icon.icns",
     "npmRebuild": false,
     "appId": "com.opengolfsim.ctt",
     "mac": {
@@ -16,7 +17,8 @@
     },
     "extraResources": [
       "./server",
-      "./client/dist"
+      "./client/dist",
+      "./resources"
     ]
   },
   "scripts": {
@@ -38,13 +40,6 @@
     "electron-builder": "^25.1.8"
   },
   "dependencies": {
-    "axios": "^1.7.9",
-    "express": "^4.21.2",
-    "express-ws": "^5.0.2",
-    "p-map": "^7.0.3",
-    "sharp": "^0.33.5",
-    "staticmaps": "^1.13.1",
-    "dotenv": "^16.4.7"
   },
   "volta": {
     "node": "20.18.1"
