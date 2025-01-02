@@ -8,7 +8,7 @@
   ],
   "main": "app/main.js",
   "build": {
-    "name": "Course Terrain Tool",
+    "productName": "Course Terrain Tool",
     "npmRebuild": false,
     "appId": "com.opengolfsim.ctt",
     "mac": {
