@@ -18,6 +18,9 @@
     "mac": {
       "category": "public.app-category.developer-tools"
     },
+    "win": {
+      "icon": "./resources/icon.ico"
+    },
     "files": ["!**/_tmp", "!**/docs", "!**/data"]
   },
   "scripts": {
