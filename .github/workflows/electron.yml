@@ -14,9 +14,8 @@ jobs:
       DEBUG: electron-builder
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
-      - name: Set outputs
-        id: vars
-        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+      - name: Set vars
+        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
 
       - name: Check out Git repository
         uses: actions/checkout@v1
@@ -37,7 +36,7 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         uses: actions/upload-artifact@v4
         with:
-          name: CTT_MacOS_arm64_${SHORT_SHA}
+          name: CTT_MacOS_arm64_${{ env.SHORT_SHA }}
           path: |
             dist/*.dmg
             dist/*.dmg.blockmap
@@ -47,7 +46,7 @@ jobs:
         if: ${{ matrix.os == 'macos-13' }}
         uses: actions/upload-artifact@v4
         with:
-          name: CTT_MacOS_amd64_${SHORT_SHA}
+          name: CTT_MacOS_amd64_${{ env.SHORT_SHA }}
           path: |
             dist/*.dmg
             dist/*.dmg.blockmap
@@ -57,5 +56,5 @@ jobs:
         if: ${{ startsWith(matrix.os, 'win') }}
         uses: actions/upload-artifact@v4
         with:
-          name: CTT_Windows_64_${SHORT_SHA}
+          name: CTT_Windows_64_${{ env.SHORT_SHA }}
           path: dist
