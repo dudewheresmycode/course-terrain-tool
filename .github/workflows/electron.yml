@@ -9,7 +9,7 @@ on:
 
 jobs:
   release:
-    if: ${{ github.ref == 'main' || github.event.label.name == 'create-build' }}
+    if: ${{ github.ref == 'ref/heads/main' || github.event.label.name == 'create-build' }}
     runs-on: ${{ matrix.os }}
 
     strategy:
