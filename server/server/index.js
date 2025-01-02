@@ -7,16 +7,12 @@ import '../utils/startup.js';
 import usgsSearch from '../lib/usgs.js';
 import { JobQueue } from '../lib/jobs.js';
 
-const DIST_PATH = path.resolve('../client/dist');
-
 export const jobQueue = new JobQueue();
 
 export const app = express();
 export const wsInstance = expressWs(app);
 
 app.use(express.json());
-
-
 
 app.ws('/progress', (ws, req) => {
   ws.on('message', (msg) => {
