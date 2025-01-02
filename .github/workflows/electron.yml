@@ -10,6 +10,7 @@ jobs:
         os: [macos-13]
     env:
       DEBUG: electron-builder
+      GH_TOKEN: ${{ secrets.github_token }}
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v1
