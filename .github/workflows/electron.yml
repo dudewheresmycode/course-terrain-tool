@@ -23,7 +23,7 @@ jobs:
       #   using: node12
       #   main: builder.js
       - name: "npm install"
-        run: npm install --omit=dev
+        run: npm install
       - name: "npm build"
         run: npm run build
       - name: "electron-builder"
