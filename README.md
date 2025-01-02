@@ -1,18 +1,22 @@
-## Course Terrain Tool
+## Course Terrain Tool (beta)
 
 <img src="./docs/screenshot.png" width="400" />
 
-The Course Terrain Tool is a web application designed to automate the complicated lidar sourcing and processing steps in the OPCD None to Done design process. It was created using the V4 OPCD toolset and instructions.
+The **Course Terrain Tool** is a desktop application designed to automate lidar/terrain sourcing and creation for building [OPCD](https://zerosandonesgcd.com/opcd-course-creation/) courses.
 
 ### Features
 
-- Search multiple sources of free lidar data
-- Automatically merge, crop, and convert LAZ files
-- Outputs RAW terrain height-maps for Unity
-- Generate satellite overlays
+- 🔎 Search multiple sources of free lidar data
+- 🚀 Automatically merge, crop, and convert LAZ or DEM files
+- 🏔️ Outputs RAW terrain height-maps for Unity
+- 🗺️ Generate cropped satellite overlay images
+
+---
 
 > [!WARNING]
 > This project is still in the (very) early stages of development! Please report any bugs on the [issues page](https://github.com/dudewheresmycode/course-terrain-tool/issues).
+
+---
 
 ### Available Data Sources
 
