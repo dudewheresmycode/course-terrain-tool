@@ -10,7 +10,6 @@
   "build": {
     "productName": "Course Terrain Tool",
     "icon": "./resources/icon.icns",
-    "npmRebuild": false,
     "appId": "com.opengolfsim.ctt",
     "mac": {
       "category": "public.app-category.developer-tools"
