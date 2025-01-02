@@ -21,6 +21,21 @@ jobs:
       - name: Conda list
         shell: pwsh
         run: conda list
+      - name: Create PDAL
+        shell: pwsh
+        run: conda create --yes --name myenv --channel conda-forge pdal
+      - name: Install PDAL
+        shell: pwsh
+        run: conda install --name myenv --channel conda-forge pdal
+      - name: Verify 1
+        shell: pwsh
+        run: pdal --version
+      - name: Verify 2
+        shell: pwsh
+        run: conda list
+      - name: Verify 2
+        shell: pwsh
+        run: ls
 
   # release:
   #   runs-on: ${{ matrix.os }}
