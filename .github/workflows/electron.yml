@@ -20,7 +20,7 @@ jobs:
 
       - name: Set vars on macos
         if: ${{ startsWith(matrix.os, 'macos') }}
-        run: echo "SHORT_SHA=`echo ${GITHUB_SHA::7}`" >> $env:GITHUB_ENV
+        run: echo "SHORT_SHA=`echo ${"${{ github.sha }}"::7}`" >> $env:GITHUB_ENV
 
       - name: Check out Git repository
         uses: actions/checkout@v1
