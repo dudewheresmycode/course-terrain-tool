@@ -35,8 +35,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "cli-truncate": "^4.0.0",
-    "concurrently": "^9.1.2",
+    "concurrently": "^9.1.2"
+  },
+  "dependencies": {
     "electron-builder": "^25.1.8"
   },
   "volta": {
