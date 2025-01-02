@@ -139,7 +139,8 @@ export default function Sidebar(props) {
   }, []);
 
   useEffect(() => {
-    ws.current = new WebSocket(`ws://${window.location.host}/progress`);
+    const wsHost = window.location.host ? window.location.host : 'localhost:3133';
+    ws.current = new WebSocket(`ws://${wsHost}/progress`);
     const handleError = (error) => {
       console.log("ws error", error);
     }
@@ -196,8 +197,9 @@ export default function Sidebar(props) {
               </InputLabel>
               <DistanceInput
                 optional={true}
-                max={5}
+                max={10}
                 defaultValue={props.outerDistance}
+                defaultChecked={!props.coordinates.outer}
                 disabled={!props.coordinates}
                 onChange={props.onOuterChanged}
               />

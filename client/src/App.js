@@ -29,8 +29,9 @@ export default function App() {
   const [dataSource, setDataSource] = useState();
   const [mapStyle, setMapStyle] = useState(0);
   const [distance, setDistance] = useState(2);
-  const [outerDistance, setOuterDistance] = useState(3);
+  const [outerDistance, setOuterDistance] = useState();
   const [coordinates, setCoodinates] = useState();
+  const [isOuterEnabled, setIsOuterEnabled] = useState(false);
   // const [isOpen, setIsOpen] = useState(false);
 
   const handleDistanceChanged = useCallback((distance) => {
@@ -41,6 +42,7 @@ export default function App() {
   const handleOuterChanged = useCallback((distance) => {
     console.log('handleOuterChanged', distance);
     setOuterDistance(distance);
+    setIsOuterEnabled(!!distance);
   }, []);
 
   const handleMapChange = useCallback((newMapStyle) => {
@@ -52,14 +54,14 @@ export default function App() {
     setMapEditMode(toggle);
     // setAnchorEl(null);
   };
-  const handleDataSourceChanged = useCallback((dataSource) => {
-    console.log('handleDataSourceChanged', dataSource);
+  const handleDataSourceChanged = dataSource => {
     setDataSource(dataSource);
-  }, []);
-  const handleCoordinatesChange = useCallback((coordinates) => {
+  };
+  const handleCoordinatesChange = coordinates => {
     console.log('handleCoordinatesChange', coordinates);
     setCoodinates(coordinates);
-  }, []);
+  };
+
 
   useEffect(() => {
     console.log('app rendered');
@@ -97,6 +99,7 @@ export default function App() {
             <Map
               distance={distance}
               outerDistance={outerDistance}
+              isOuterEnabled={isOuterEnabled}
               dataSource={dataSource}
               mapStyle={mapStyle}
               mapEditMode={mapEditMode}

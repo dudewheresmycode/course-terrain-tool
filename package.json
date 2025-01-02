@@ -1,26 +1,53 @@
 {
   "name": "course-terrain-tool",
   "version": "1.0.0",
-  "description": "An open source tool to find and process terrain data for use in the OPCD golf course design process",
+  "description": "Course Terrain Tool",
+  "author": {
+    "name": "dudewheresmycode",
+    "url": "https://github.com/dudewheresmycode"
+  },
   "workspaces": [
-    "client",
-    "server",
-    "electron"
+    "client"
   ],
+  "type": "module",
+  "main": "app/main.js",
+  "build": {
+    "productName": "Course Terrain Tool",
+    "icon": "./resources/icon.icns",
+    "appId": "com.opengolfsim.ctt",
+    "mac": {
+      "category": "public.app-category.developer-tools"
+    },
+    "files": ["!**/_tmp", "!**/docs", "!**/data"]
+  },
   "scripts": {
+    "start": "electron .",
+    "app:debug": "DEBUG=electron-builder electron-builder --dir",
+    "app:dir": "electron-builder --dir",
+    "app:dist": "electron-builder --publish never",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "client": "npm run debug --workspace=client",
-    "server": "npm start --workspace=server",
+    "client": "CLIENT_DEV_MODE=1 concurrently --kill-others  'npm run debug --workspace=client' 'npm run start'",
+    "_server": "npm start --workspace=server",
     "build": "npm run build --workspace=client",
-    "develop": "CTC_DEBUG=1 concurrently --kill-others 'npm run debug --workspace=client' 'npm start --workspace=server'",
-    "start": "npm start --workspace=server"
+    "_develop": "CTC_DEBUG=1 concurrently --kill-others 'npm run debug --workspace=client' 'npm start --workspace=server'",
+    "standalone": "node app/standalone.js",
+    "_app_deps": "electron-builder install-app-deps"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
   },
   "dependencies": {
+    "axios": "^1.7.9",
+    "express": "^4.21.2",
+    "express-ws": "^5.0.2",
+    "p-map": "^7.0.3"
+  },
+  "volta": {
+    "node": "20.18.1"
   }
 }

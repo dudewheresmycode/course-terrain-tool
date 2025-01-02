@@ -12,8 +12,8 @@ import {
   geoTIFFHillShade,
   generateSatelliteForSource,
   geoTiffToRaw
-} from '../lib/steps/gdal.js';
-import mkdirSafe from '../utils/mkdirSafe.js';
+} from './steps/gdal.js';
+import mkdirSafe from '../../utils/mkdirSafe.js';
 
 const SATELLITE_SOURCES = [
   'google',

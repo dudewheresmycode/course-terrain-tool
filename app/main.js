@@ -1,12 +1,13 @@
 // Modules to control application life and create native browser window
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
+import express from 'express';
 
-import '../server/utils/startup.js';
-import { app as server } from '../server/server/index.js';
+import './utils/startup.js';
+import { app as server } from './server/index.js';
+import { verifyDependencies } from './conda/installer.js';
 
 const PORT = process.env.PORT || 3133;
-
 
 function createWindow () {
   // Create the browser window.
@@ -14,24 +15,35 @@ function createWindow () {
     width: 1200,
     height: 700,
     webPreferences: {
-      preload: path.join(process.cwd(), 'preload.js')
+      preload: path.resolve(app.getAppPath(), './app/preload.js'),
+      // nodeIntegrationInWorker: true,
+      // contextIsolation: true,
+      // nodeIntegration: true,
     }
   });
 
   // and load the index.html of the app.
   // mainWindow.loadFile(path.join(process.cwd(), 'index.html'))
-  // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
-  mainWindow.loadURL('http://localhost:3030');
+  if (process.env.CLIENT_DEV_MODE) {
+    // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
+    mainWindow.loadURL('http://localhost:3030');
+  } else {
+    mainWindow.loadURL('http://localhost:3133');
+  }
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools()
+  // mainWindow.webContents.openDevTools()
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
+  
+  await verifyDependencies();
+  
   await startServer();
+
   createWindow();
 
   app.on('activate', function () {
@@ -59,6 +71,13 @@ app.on('window-all-closed', function () {
 
 function startServer() {
   return new Promise(resolve => {
+    
+    // server.get('/preload.js', (req, res) => res.sendFile(path.join(process.cwd(), './preload.js')));
+    const distPath = path.resolve(app.getAppPath(), './client/dist');
+    console.log('distPath', distPath);
+    server.use(express.static(distPath));
+    server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+
     server.listen(PORT, () => {
       // we set CTC_DEBUG when we run the app in develop mode and 
       // proxy the server behind the webpack dev server
