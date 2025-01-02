@@ -24,7 +24,7 @@
     "build": "npm run build --workspace=client",
     "develop": "CTC_DEBUG=1 concurrently --kill-others 'npm run debug --workspace=client' 'npm start --workspace=server'",
     "start": "npm start --workspace=server",
-    "postinstall": "electron-builder install-app-deps"
+    "app_deps": "electron-builder install-app-deps"
   },
   "keywords": [],
   "author": "",
