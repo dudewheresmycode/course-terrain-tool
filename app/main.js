@@ -15,7 +15,7 @@ function createWindow () {
     width: 1200,
     height: 700,
     webPreferences: {
-      preload: path.resolve(app.getAppPath(), './preload.js'),
+      preload: path.resolve(app.getAppPath(), './app/preload.js'),
       // nodeIntegrationInWorker: true,
       // contextIsolation: true,
       // nodeIntegration: true,
@@ -73,7 +73,7 @@ function startServer() {
   return new Promise(resolve => {
     
     // server.get('/preload.js', (req, res) => res.sendFile(path.join(process.cwd(), './preload.js')));
-    const distPath = path.resolve(app.getAppPath(), '../client/dist');
+    const distPath = path.resolve(app.getAppPath(), './client/dist');
     console.log('distPath', distPath);
     server.use(express.static(distPath));
     server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));

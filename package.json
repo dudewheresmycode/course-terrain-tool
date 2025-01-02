@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "An open source tool to find and process terrain data for use in the OPCD golf course design process",
   "workspaces": [
-    "client",
-    "app"
+    "client"
   ],
+  "type": "module",
   "main": "app/main.js",
   "build": {
-    "asar": false,
+    "asar": true,
     "productName": "Course Terrain Tool",
     "icon": "./resources/icon.icns",
     "appId": "com.opengolfsim.ctt",
@@ -22,24 +22,30 @@
     ]
   },
   "scripts": {
+    "start": "CTT_ELECTRON=1 electron .",
     "app:dir": "electron-builder --dir",
     "app:dist": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1",
     "client": "CLIENT_DEV_MODE=1 concurrently --kill-others  'npm run debug --workspace=client' 'npm run -w app start'",
-    "server": "npm start --workspace=server",
+    "_server": "npm start --workspace=server",
     "build": "npm run build --workspace=client",
-    "develop": "CTC_DEBUG=1 concurrently --kill-others 'npm run debug --workspace=client' 'npm start --workspace=server'",
-    "start": "npm start --workspace=server",
-    "app_deps": "electron-builder install-app-deps"
+    "_develop": "CTC_DEBUG=1 concurrently --kill-others 'npm run debug --workspace=client' 'npm start --workspace=server'",
+    "_start_server": "npm start --workspace=server",
+    "_app_deps": "electron-builder install-app-deps"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "electron": "^33.2.1"
   },
   "dependencies": {
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "axios": "^1.7.9",
+    "express": "^4.21.2",
+    "express-ws": "^5.0.2",
+    "p-map": "^7.0.3"
   },
   "volta": {
     "node": "20.18.1"
