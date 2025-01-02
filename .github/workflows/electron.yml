@@ -21,12 +21,12 @@ jobs:
       - name: Conda list
         shell: pwsh
         run: conda list
-      - name: Create PDAL
-        shell: pwsh
-        run: conda create --yes --name myenv --channel conda-forge pdal
+      # - name: Create PDAL
+      #   shell: pwsh
+      #   run: conda create --yes --name myenv --channel conda-forge pdal
       - name: Install PDAL
         shell: pwsh
-        run: conda install --name myenv --channel conda-forge pdal
+        run: conda install --channel conda-forge pdal
       - name: Verify 1
         shell: pwsh
         run: pdal --version
