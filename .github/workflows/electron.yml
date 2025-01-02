@@ -28,7 +28,7 @@ jobs:
       - name: "npm build"
         run: npm run build
       - name: "electron-builder"
-        run: npm run app:dist
+        run: npx electron-builder --publish never
 
       # - name: Build/release Electron app
       #   uses: samuelmeuli/action-electron-builder@v1
