@@ -8,6 +8,7 @@
   ],
   "main": "app/main.js",
   "build": {
+    "asar": false,
     "productName": "Course Terrain Tool",
     "icon": "./resources/icon.icns",
     "appId": "com.opengolfsim.ctt",
