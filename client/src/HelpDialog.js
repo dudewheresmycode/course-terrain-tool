@@ -7,6 +7,8 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import { Link, List, ListItem, Typography } from '@mui/material';
 
+import LinkOut from './LinkOut';
+
 function NumberedListItem(props) {
   return (<ListItem sx={{ display: "list-item" }}>{props.children}</ListItem>);
 }
@@ -32,20 +34,27 @@ export default function HelpDialog(props) {
       </DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">
-          The OpenGolf Terrain Data Tool provides an automated way to find and process lidar data for creating your OPCD courses. For more information, visit the <Link href="https://zerosandonesgcd.com/opcd-course-creation" target="_blank">OPCD website</Link>.
+          Course Terrain Tool provides an automated way to find, process, and convert lidar data into terrain height 
+          maps for creating <LinkOut href="https://zerosandonesgcd.com/opcd-course-creation" target="_blank">OPCD</LinkOut> courses.
+          For more information, visit the <LinkOut href="https://github.com/dudewheresmycode/course-terrain-tool" target="_blank">Github Project</LinkOut>.
         </DialogContentText>
         <List sx={{ listStyle: "decimal", pl: 4 }}>
           <NumberedListItem>
             <Typography>
-              Right-click anywhere on the map to set the center point of your terrain capture
+              Shift-click anywhere on the map to set the center point of your terrain capture
+            </Typography>
+            <Typography variant="caption" component="p" color="textSecondary">
+              Tip: You can also click and drag the pin to fine-tune the center of the square.
             </Typography>
           </NumberedListItem>
           <NumberedListItem>
             <Typography component="p">
-              Set the size of the square area (in kilometers)
+              Set the capture size of the square terrain area (in kilometers). Optionally, set a size for an outer area.
             </Typography>
-            <Typography variant="caption" component="p" color="textSecondary">
-              Tip: You can also click and drag the pin to fine-tune the center of the square.
+          </NumberedListItem>
+          <NumberedListItem>
+            <Typography component="p">
+              Click Submit Job, sit back, and watch the magic happen!
             </Typography>
           </NumberedListItem>
         </List>

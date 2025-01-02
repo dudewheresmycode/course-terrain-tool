@@ -65,23 +65,26 @@ export default function SearchDialog(props) {
     }
   }, []);
 
-  const handleSubmit = useCallback(async () => {
-    console.log('handleSubmit', props.coordinates);
-    if (!props.coordinates) { return; }
-    const params = new URLSearchParams({
-      polygon: props.coordinates.outer.map(points => points.join(' ')).join(','),
-      center: props.coordinates.center
-    });
-    setResults(undefined);
-    // const res = await fetch(`/api/render?${params}`);
-    // console.log(res);
-  }, [props.coordinates]);
+  // const handleSubmit = useCallback(async () => {
+  //   console.log('handleSubmit', props.coordinates);
+  //   if (!props.coordinates) { return; }
+  //   const coords = props.coordinates.outer || props.coordinates.inner;
+  //   const params = new URLSearchParams({
+  //     polygon: coords.map(points => points.join(' ')).join(','),
+  //     center: props.coordinates.center
+  //   });
+  //   setResults(undefined);
+  //   // const res = await fetch(`/api/render?${params}`);
+  //   // console.log(res);
+  // }, [props.coordinates]);
 
   const fetchResults = useCallback(async () => {
     console.log('fetchResults', props.coordinates);
     if (!props.coordinates) { return; }
+    const coords = props.coordinates.outer.length ? props.coordinates.outer : props.coordinates.inner;
+    console.log('coords', coords, props.coordinates);
     const params = new URLSearchParams({
-      polygon: props.coordinates.outer.map(points => points.join(' ')).join(','),
+      polygon: coords.map(points => points.join(' ')).join(','),
       center: props.coordinates.center
     });
     const data = await fetch(`/api/search?${params}`).then(res => res.json());

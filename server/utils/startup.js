@@ -4,8 +4,8 @@ import dotEnv from 'dotenv';
 // parse any .env files that exist
 dotEnv.config({
   path: [
-    path.resolve(process.cwd(), '.env'),
-    path.resolve(process.cwd(), '../.env'),
+    path.resolve(process.cwd(), 'default.env'),
+    path.resolve(process.cwd(), '../default.env'),
   ]
 });
 

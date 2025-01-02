@@ -8,5 +8,6 @@
 **/Dockerfile*
 **/node_modules
 **/npm-debug.log
-**/src
 **/_tmp
+**/data
+**/*DS_

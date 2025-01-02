@@ -1,10 +1,11 @@
 {
-  "name": "lidar-dl",
+  "name": "course-terrain-tool",
   "version": "1.0.0",
-  "description": "Terrain Data Tools",
+  "description": "An open source tool to find and process terrain data for use in the OPCD golf course design process",
   "workspaces": [
     "client",
-    "server"
+    "server",
+    "electron"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -19,5 +20,7 @@
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "dependencies": {
   }
 }

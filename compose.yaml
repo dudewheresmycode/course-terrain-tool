@@ -2,6 +2,7 @@ services:
   app:
     build:
       context: .
+    env_file: default.env
     environment:
       NODE_ENV: production
       PORT: 3133

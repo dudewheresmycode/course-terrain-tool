@@ -1,0 +1,11 @@
+{
+  "name": "ctt-electron",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "CTT_ELECTRON=1 electron ."
+  },
+  "dependencies": {
+    "electron": "^33.2.1"
+  }
+}

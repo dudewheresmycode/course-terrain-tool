@@ -15,6 +15,7 @@ import ToggleButtonGroup, {
 } from '@mui/material/ToggleButtonGroup';
 import Modal from '@mui/material/Modal';
 import Typography from '@mui/material/Typography';
+// import { SearchBox } from "@mapbox/search-js-react";
 
 import DistanceInput from './DistanceInput';
 import { MapStyleURIs } from './Map';
@@ -24,6 +25,7 @@ import { Tooltip } from '@mui/material';
 // const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({ }));
 
 export default function Toolbar(props) {
+  const [searchValue, setSearchValue] = React.useState('');
   const [helpOpen, setHelpOpen] = useState(false);
   const handleHelpOpen = () => setHelpOpen(true);
   const handleHelpClose = () => setHelpOpen(false);
@@ -32,6 +34,10 @@ export default function Toolbar(props) {
   const [layerMenuAnchorEl, setLayerMenuAnchorEl] = useState(null);
   const isLayerMenuOpen = Boolean(layerMenuAnchorEl);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  
+  const handleSearchChange = (d) => {
+    setSearchValue(d);
+  };
 
   const handleClose = useCallback(() => {
     setLayerMenuAnchorEl(null);
@@ -74,6 +80,8 @@ export default function Toolbar(props) {
           flexWrap: 'wrap',
         })}
       >
+
+      
         <IconButton onClick={handleHelpOpen} sx={{ mr: 1 }}>
           <HelpIcon />
         </IconButton>

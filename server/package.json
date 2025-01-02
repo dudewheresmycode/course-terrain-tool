@@ -1,9 +1,9 @@
 {
-  "name": "tdt-server",
+  "name": "ctt-server",
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node index.js",
     "test": "node ./test/job.js"
   },
   "dependencies": {
@@ -12,9 +12,7 @@
     "express-ws": "^5.0.2",
     "p-map": "^7.0.3",
     "sharp": "^0.33.5",
-    "staticmaps": "^1.13.1"
-  },
-  "devDependencies": {
+    "staticmaps": "^1.13.1",
     "dotenv": "^16.4.7"
   }
 }

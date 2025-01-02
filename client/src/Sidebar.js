@@ -16,6 +16,7 @@ import DistanceInput from './DistanceInput';
 import SearchDialog from './SearchDialog';
 import ProgressDialog from './ProgressDialog';
 import { Alert, Checkbox, FormHelperText, TextField } from '@mui/material';
+import RangeInput from './RangeInput';
 
 export default function Sidebar(props) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -32,14 +33,12 @@ export default function Sidebar(props) {
   const handleProgressClose = () => setProgressDialogOpen(false);
 
   const innerResolutionDimensions = useMemo(() => {
-    return (1 / tifResolution) * props.distance * 1000
+    return Math.round((1 / tifResolution) * props.distance * 1000);
   }, [tifResolution, props.distance]);
 
   const outerResolutionDimensions = useMemo(() => {
-    return (1 / tifResolutionOuter) * props.outerDistance * 1000
-  }, [tifResolutionOuter, props.outerDistance]);
-
-  // const [selectedDataSource, setSelectedDataSource] = useState();
+    return Math.round((1 / tifResolutionOuter) * (props.distance + props.outerDistance) * 1000);
+  }, [tifResolutionOuter, props.distance, props.outerDistance]);
 
   const handleJobSubmit = useCallback(async () => {
     if (!courseName || /[^a-z0-9\_\-]/i.test(courseName)) {
@@ -54,7 +53,11 @@ export default function Sidebar(props) {
       coordinates,
       distance,
       outerDistance,
-      dataSource: props.dataSource
+      dataSource: props.dataSource,
+      resolution: { 
+        inner: tifResolution,
+        outer: tifResolutionOuter
+      }
     };
     console.log('submit job', payload);
 
@@ -75,7 +78,15 @@ export default function Sidebar(props) {
     // }).catch(error => {
     //   console.log('error!', error);
     // });
-  }, [courseName, props.coordinates, props.distance, props.outerDistance, props.dataSource]);
+  }, [
+    courseName,
+    props.coordinates,
+    props.distance,
+    props.outerDistance,
+    props.dataSource,
+    tifResolution,
+    tifResolutionOuter
+  ]);
 
   const handleResolutionChange = useCallback((event) => {
     setTifResolution(event.target.value);
@@ -165,7 +176,7 @@ export default function Sidebar(props) {
 
       {!props.coordinates ? (
         <Box sx={{ mb: 3 }}>
-          <Alert icon={<InfoIcon />} color="info">Right-click on the map to set the center point.</Alert>
+          <Alert icon={<InfoIcon />} color="info">Shift-click on the map to set the center point.</Alert>
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -173,7 +184,8 @@ export default function Sidebar(props) {
             <FormControl fullWidth={true}>
               <InputLabel id="inner-range">Inner Area</InputLabel>
               <DistanceInput
-                sliderProps={{ labelId: 'inner-range' }}
+                max={5}
+                defaultValue={props.distance}
                 disabled={!props.coordinates}
                 onChange={props.onDistanceChange}
               />
@@ -184,15 +196,13 @@ export default function Sidebar(props) {
               </InputLabel>
               <DistanceInput
                 optional={true}
-                sliderProps={{ labelId: 'outer-range' }}
+                max={5}
+                defaultValue={props.outerDistance}
                 disabled={!props.coordinates}
                 onChange={props.onOuterChanged}
               />
             </FormControl>
             <FormControl fullWidth={true} variant="outlined">
-              {/* <InputLabel id="data-button">Dataset</InputLabel> */}
-
-              {/* <Typography sx={{ mb: 1 }}>Dataset</Typography> */}
               <Button
                 labelId="data-button"
                 fullWidth={true}
@@ -200,7 +210,6 @@ export default function Sidebar(props) {
                 startIcon={props.dataSource ? null : (<SearchIcon />)}
                 endIcon={props.dataSource ? (<ClearIcon />) : null}
                 onClick={handleSearchClick}
-                size="small"
                 variant="outlined"
                 disabled={!props.coordinates}
               >
@@ -211,50 +220,68 @@ export default function Sidebar(props) {
             {props.dataSource?.format === 'LAZ' ? (
               <>
                 <FormControl fullWidth={true}>
-                  <InputLabel id="resolution-select-label">Inner GeoTIFF Resolution</InputLabel>
-                  <Select
-                    labelId="resolution-select-label"
-                    id="resolution-select"
+                  <InputLabel id="resolution-select-label">Inner Resolution</InputLabel>
+                  <RangeInput
+                    min={0.1}
+                    max={2}
+                    step={0.1}
+                    suffix={'m'}
                     value={tifResolution}
-                    label="GeoTIFF Resolution"
                     disabled={props.dataSource?.format!=='LAZ'}
                     onChange={handleResolutionChange}
-                  >
-                    <MenuItem value={0.1}>10 cm</MenuItem>
-                    <MenuItem value={0.2}>20 cm</MenuItem>
-                    <MenuItem value={0.4}>40 cm</MenuItem>
-                    <MenuItem value={0.5}>50 cm</MenuItem>
-                    <MenuItem value={1.0}>1 m</MenuItem>
-                  </Select>
+                  />
                   <FormHelperText>
                     {innerResolutionDimensions}&times;{innerResolutionDimensions}
                   </FormHelperText>
                 </FormControl>
-
-                <FormControl fullWidth={true}>
-                  <InputLabel id="resolution-select-label">Outer GeoTIFF Resolution</InputLabel>
-                  <Select
-                    labelId="resolution-select-label"
-                    id="resolution-select"
-                    value={tifResolutionOuter}
-                    label="GeoTIFF Resolution"
-                    disabled={props.dataSource?.format!=='LAZ'}
-                    onChange={handleResolutionOuterChange}
-                  >
-                    <MenuItem value={0.1}>10 cm</MenuItem>
-                    <MenuItem value={0.2}>20 cm</MenuItem>
-                    <MenuItem value={0.4}>40 cm</MenuItem>
-                    <MenuItem value={0.5}>50 cm</MenuItem>
-                    <MenuItem value={1}>1 m</MenuItem>
-                    <MenuItem value={1.5}>1.5 m</MenuItem>
-                    <MenuItem value={2}>2 m</MenuItem>
-                    <MenuItem value={2.5}>2.5 m</MenuItem>
-                  </Select>
-                  <FormHelperText>
-                    {outerResolutionDimensions}&times;{outerResolutionDimensions}
-                  </FormHelperText>
-                  <FormHelperText>Tip: Smaller resolutions create larger files and take longer to process</FormHelperText>
-                </FormControl>
+                {
+                  props.outerDistance ? (
+                    <FormControl fullWidth={true}>
+                      <InputLabel id="resolution-select-label">Outer Resolution</InputLabel>
+                      <RangeInput
+                        min={0.1}
+                        max={10}
+                        step={0.1}
+                        suffix={'m'}
+                        value={tifResolutionOuter}
+                        disabled={props.dataSource?.format!=='LAZ'}
+                        onChange={handleResolutionOuterChange}
+                      />
+                      <FormHelperText>
+                        {outerResolutionDimensions}&times;{outerResolutionDimensions}
+                      </FormHelperText>
+                      {/* <FormHelperText>Tip: Smaller resolutions create larger files and take longer to process</FormHelperText> */}
+                    </FormControl>
+                  ) : null
+                }
+                {/* {
+                  props.outerDistance ? (
+                    <FormControl fullWidth={true}>
+                      <InputLabel id="resolution-select-label">Outer Resolution</InputLabel>
+                      <Select
+                        labelId="resolution-select-label"
+                        id="resolution-select"
+                        value={tifResolutionOuter}
+                        label="GeoTIFF Resolution"
+                        disabled={props.dataSource?.format!=='LAZ'}
+                        onChange={handleResolutionOuterChange}
+                      >
+                        <MenuItem value={0.1}>10 cm</MenuItem>
+                        <MenuItem value={0.2}>20 cm</MenuItem>
+                        <MenuItem value={0.4}>40 cm</MenuItem>
+                        <MenuItem value={0.5}>50 cm</MenuItem>
+                        <MenuItem value={1}>1 m</MenuItem>
+                        <MenuItem value={1.5}>1.5 m</MenuItem>
+                        <MenuItem value={2}>2 m</MenuItem>
+                        <MenuItem value={2.5}>2.5 m</MenuItem>
+                      </Select>
+                      <FormHelperText>
+                        {outerResolutionDimensions}&times;{outerResolutionDimensions}
+                      </FormHelperText>
+                      <FormHelperText>Tip: Smaller resolutions create larger files and take longer to process</FormHelperText>
+                    </FormControl>
+                  ) : null
+                } */}
 
               </>
             ) : null}

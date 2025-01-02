@@ -1,5 +1,5 @@
 {
-  "name": "tdt-client",
+  "name": "ctt-client",
   "scripts": {
     "debug": "webpack serve --mode development",
     "watch": "webpack --watch",
@@ -12,11 +12,14 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mapbox/mapbox-gl-draw": "^1.5.0",
+    "@mapbox/mapbox-gl-geocoder": "^5.0.3",
+    "@mapbox/search-js-react": "^1.0.0-beta.24",
     "@mui/icons-material": "^6.3.0",
     "@mui/material": "^6.3.0",
     "babel-loader": "^9.2.1",
     "concurrently": "^9.1.0",
     "css-loader": "^7.1.2",
+    "dotenv": "^16.4.7",
     "html-webpack-plugin": "^5.6.3",
     "mapbox-gl": "^3.9.1",
     "mapbox-gl-draw-rectangle-mode": "^1.0.4",

@@ -11,9 +11,13 @@ import { Chip, LinearProgress, Typography } from '@mui/material';
 
 export default function ProgressDialog(props) {
   const { job } = props.jobState || {};
-
+  const handleClose = (event, reason) => {
+    if (reason && reason === "backdropClick") 
+      return;
+    props.onClose();
+  }
   return (
-    <Dialog onClose={props.onClose} open={props.open} fullWidth={true} maxWidth="sm">
+    <Dialog onClose={handleClose} open={props.open} fullWidth={true} maxWidth="sm" >
       <DialogTitle id="alert-dialog-title">
         Processing Terrain
       </DialogTitle>
@@ -32,13 +36,14 @@ export default function ProgressDialog(props) {
                 value={job?.progress?.percent ? job.progress.percent : 0}
               />
               <Typography sx={{ mt: 2 }}>{job?.progress?.label || 'Starting job'}</Typography>
+              <Typography color="textSecondary" sx={{ mt: 1 }}>{job?.progress?.secondary || ''}</Typography>
               {/* <pre>{JSON.stringify(job, null, 1)}</pre> */}
             </>
           )}
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={props.onClose}>Close</Button>
+        <Button onClick={props.onCancel}>Cancel</Button>
       </DialogActions>
     </Dialog>
   )

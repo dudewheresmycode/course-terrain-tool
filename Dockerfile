@@ -1,11 +1,12 @@
-FROM --platform=linux/amd64 ubuntu:22
+FROM --platform=linux/amd64 ubuntu:22.04
+
 #FROM --platform=linux/amd64 pdal/pdal:latest
 
-# install nodejs, pdal, gdal
-RUN apt update && \
-apt install -y curl && \
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-apt-get install -y nodejs pdal gdal
+RUN apt update && apt install -y curl pdal gdal-bin
+
+RUN curl -sL https://deb.nodesource.com/setup_20.x -o node_setup.sh && \
+bash node_setup.sh && \
+apt install -y nodejs 
 
 # create non-root node user?
 # useradd -ms /bin/bash node
@@ -13,13 +14,16 @@ apt-get install -y nodejs pdal gdal
 # RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
 
 
-# WORKDIR /app
+WORKDIR /app
 
-# COPY package*.json ./
-# COPY server .
-# COPY dist .
+COPY package*.json /app
+COPY client/package*.json /app/client/
+COPY server/package*.json /app/server/
 
-# RUN npm install
-# RUN npm run build
+RUN npm install --omit=dev
 
-# CMD ["node", "server.js"]
+COPY . /app
+
+RUN npm run build
+
+CMD ["npm", "start"]

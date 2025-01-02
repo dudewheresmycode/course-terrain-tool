@@ -1,7 +1,9 @@
+const webpack = require('webpack');
 const path = require('path');
 
-const HtmlWebpackPlugin = require("html-webpack-plugin");
+require('dotenv').config({ path: './.env' }); 
 
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 module.exports = {
   output: {
     path: path.join(__dirname, "/dist"), // the bundle output path
@@ -11,6 +13,9 @@ module.exports = {
     ignored: /node_modules/,
   },
   plugins: [
+    new webpack.DefinePlugin({
+      "process.env": JSON.stringify(process.env),
+    }),
     new HtmlWebpackPlugin({
       template: "src/index.html", // to import index.html file inside index.js
     }),

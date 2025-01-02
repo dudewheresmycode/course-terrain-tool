@@ -1,6 +1,15 @@
 ## Course Terrain Tool
 
-The Course Terrain Tool is a web application designed to automate the lidar sourcing and data processing steps in the OPCD None to Done design process. It was created using the V4 OPCD toolset and instructions.
+<img src="./docs/screenshot.png" width="400" />
+
+The Course Terrain Tool is a web application designed to automate the complicated lidar sourcing and processing steps in the OPCD None to Done design process. It was created using the V4 OPCD toolset and instructions.
+
+### Features
+
+- Search multiple sources of free lidar data
+- Automatically merge, crop, and convert LAZ files
+- Outputs RAW terrain height-maps for Unity
+- Generate satellite overlays
 
 > [!WARNING]
 > This project is still in the (very) early stages of development! Please report any bugs on the [issues page](https://github.com/dudewheresmycode/course-terrain-tool/issues).
@@ -28,14 +37,14 @@ We're continually working on adding new sources to this list. If you have a spec
 
    <a name="env-file"></a>
 
-1. **Create an `.env` file**
+1. **Create an `default.env` file**
 
    Before we can run the app, we need to set our `TERRAIN_DIR` environment variable, which will tell the server where to download and output files. This is essentially our main _Course Directory_.
 
-   1. Create a new file called `.env` and place it in the root project (`course-terrain-tool`) directory.
+   1. Create a new file called `default.env` and place it in the root project (`course-terrain-tool`) directory.
    2. Open the file in a text editor and enter `TERRAIN_DIR=/path/to/folder`, replacing `/path/to/folder` part with the full path to the folder on your computer that you want to output all your terrain data to.
 
-      Example `course-terrain-tool/.env`:
+      Example `course-terrain-tool/default.env`:
 
       ```
       TERRAIN_DIR=/path/to/folder
@@ -73,8 +82,13 @@ brew install node gdal pdal
 #### Debian/Ubuntu
 
 ```bash
-apt update
-apt install node gdal pdal
+# install GDAL/PDAL
+sudo apt update
+sudo apt install gdal-bin pdal
+
+# install node/npm
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
+sudo apt install -y nodejs
 ```
 
 #### Windows
@@ -95,7 +109,7 @@ npm run build
 ```
 
 > [!WARNING]
-> Make sure you created an `.env` file in the [Getting Started](#env-file) section before starting the app. Otherwise you'll likely see an error about the missing variable.
+> Make sure you created an `default.env` file in the [Getting Started](#env-file) section before starting the app. Otherwise you'll likely see an error about the missing variable.
 
 Then you can run the app using the static build:
 
@@ -118,21 +132,3 @@ npm run develop
 ```
 
 The live React build runs on a separate port number. The live dev build should be running at [`http://localhost:3030`](http://localhost:3030)
-
-### Notes
-
-Run web app via Docker
-
-```bash
-docker run -d -p 3133:3133 lidar-dl
-```
-
-Run Docker PDAL command:
-
-```bash
-docker run -v ${PWD}/data:/data --name lidar-ps -it lidar-dl
-```
-
-```bash
-pdal pipeline /app/pipeline_laz.json
-```

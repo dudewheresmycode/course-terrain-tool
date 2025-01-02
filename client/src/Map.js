@@ -1,10 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import MapboxDraw from "@mapbox/mapbox-gl-draw";
-import DrawRectangle from 'mapbox-gl-draw-rectangle-mode';
+import { styled } from '@mui/material';
+import Box from '@mui/material/Box';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+
+// import MapboxDraw from "@mapbox/mapbox-gl-draw";
+// import DrawRectangle from 'mapbox-gl-draw-rectangle-mode';
 
 import 'mapbox-gl/dist/mapbox-gl.css'
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css'
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
+// import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css'
+
+const MapElement = styled(Box)({
+  width: '100%',
+  height: '100%',
+  'canvas': {
+    outline: 'none !important'
+  }
+});
 
 const MAP_START_POINT = [-122.49245658909646, 37.70908156067745]; // SanFran
 // const MAP_START_POINT = [-105.0483, 40.53461]; // Foco
@@ -30,10 +43,10 @@ export const MapStyleURIs = [
   // Street: 'mapbox://styles/mapbox/standard',
 ];
 
-mapboxgl.accessToken = 'pk.eyJ1IjoibmRtd2ViIiwiYSI6IllfQk9BNlkifQ.uQ4nfAXtJ55IV5aRf1hHmg';
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
 
-const modes = MapboxDraw.modes;
-modes.draw_rectangle = DrawRectangle;
+// const modes = MapboxDraw.modes;
+// modes.draw_rectangle = DrawRectangle;
 
 function plusMinusDistance(longitude, latitude, kilometers) {
   
@@ -75,7 +88,7 @@ export default function Map(props) {
   }, [props.distance, centerPosition]);
 
   const outerCoordinates = useMemo(() => {
-    if (!centerPosition) {
+    if (!centerPosition || !props.outerDistance) {
       return [];
     }
     const extendDistance = props.distance + props.outerDistance;
@@ -89,6 +102,11 @@ export default function Map(props) {
     const source = mapInstance.current.getSource(id);
     if (!source) {
       throw new Error('No inner source found');
+    }
+    if (!coords) {
+
+      // markerInstance.current.removeSource(coords);
+      return;
     }
     source.setData({
         'type': 'Feature',
@@ -114,6 +132,10 @@ export default function Map(props) {
   }, []);
   
   const handleMapClick = useCallback((event) => {
+    console.log(event);
+    if (!event.originalEvent.shiftKey) {
+      return;
+    }
     markerInstance.current.remove();
     markerInstance.current.setLngLat(event.lngLat);
     markerInstance.current.addTo(mapInstance.current);
@@ -283,28 +305,7 @@ export default function Map(props) {
       }
     });
     
-    // Add a new layer to visualize the polygon.
-    mapInstance.current.addLayer({
-      'id': INNER_ID_FILL,
-      'type': 'fill',
-      'source': INNER_ID, // reference the data source
-      'layout': {},
-      'paint': {
-          'fill-color': INNER_COLOR, // blue color fill
-          'fill-opacity': 0.2
-      }
-    });
-    // Add a black outline around the polygon.
-    mapInstance.current.addLayer({
-      'id': INNER_ID_OUTLINE,
-      'type': 'line',
-      'source': INNER_ID,
-      'layout': {},
-      'paint': {
-          'line-color': INNER_COLOR,
-          'line-width': 1
-      }
-    });
+
 
     mapInstance.current.addSource(OUTER_ID, {
       'type': 'geojson',
@@ -312,7 +313,6 @@ export default function Map(props) {
         'type': 'Feature',
         'geometry': {
           'type': 'Polygon',
-          // These coordinates outline Maine.
           'coordinates': [innerCoordinates]
         }
       }
@@ -338,6 +338,26 @@ export default function Map(props) {
           'line-width': 1
       }
     });
+    
+    // add inner layers at the end, so they are on top
+    mapInstance.current.addLayer({
+      'id': INNER_ID_FILL,
+      'type': 'fill',
+      'source': INNER_ID, // reference the data source
+      'layout': {},
+      'paint': {
+        'fill-color': INNER_COLOR,
+        'fill-opacity': 0.2
+      }
+    });
+    mapInstance.current.addLayer({
+      'id': INNER_ID_OUTLINE,
+      'type': 'line',
+      'source': INNER_ID,
+      'layout': {},
+      'paint': { 'line-color': INNER_COLOR, 'line-width': 1 }
+    });
+    
   }, [innerCoordinates, centerPosition]);
 
   useEffect(() => {
@@ -374,12 +394,19 @@ export default function Map(props) {
   }, [props.dataSource]);
 
   useEffect(() => {
+  
     mapInstance.current = new mapboxgl.Map({
       style: MapStyleURIs[0].uri,
+      boxZoom: false,
       container: mapElement.current, // container ID
       center: MAP_START_POINT, // starting position [lng, lat]. Note that lat must be set between -90 and 90
       zoom: 10 // starting zoom
     });
+    mapInstance.current.addControl(new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      mapboxgl: mapboxgl,
+      types: ['place', 'address'].join(',')
+    }));
     mapInstance.current.addControl(new mapboxgl.NavigationControl());
     mapInstance.current.on('load', addLayers);
 
@@ -389,7 +416,8 @@ export default function Map(props) {
       });
     }
     
-    mapInstance.current.on('contextmenu', handleMapClick);
+    // mapInstance.current.on('contextmenu', handleMapClick);
+    mapInstance.current.on('click', handleMapClick);
 
     // const currentPosition = markerInstance.current.getLngLat();
     // console.log('props.distance', props.distance);
@@ -405,5 +433,5 @@ export default function Map(props) {
       mapInstance.current.remove();
     }
   }, []);
-  return (<div style={{width: '100%', height: '100%'}} ref={mapElement} id="map"></div>);
+  return (<MapElement ref={mapElement} id="map"></MapElement>);
 }

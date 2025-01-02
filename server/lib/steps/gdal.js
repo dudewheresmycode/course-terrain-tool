@@ -5,7 +5,8 @@ import pMap from 'p-map';
 const execAsync = promisify(exec);
 
 // const wmsSource = path.resolve('./server/wms/google.xml');
-const wmsDirectory = path.resolve('./wms');
+// const isElectron = process.cwd().endsWith('electron');
+const wmsDirectory = path.resolve(process.cwd(), process.env.CTT_ELECTRON ? '../server/wms' : 'wms');
 
 function runCommand(bin, options, onProgress) {
   let progess = 0;

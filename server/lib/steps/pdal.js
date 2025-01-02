@@ -4,7 +4,7 @@ import { promisify } from 'util';
 import { spawn, exec, execSync } from 'child_process';
 import os from 'os';
 
-import mkdirSafe from '../utils/mkdirSafe.js';
+import mkdirSafe from '../../utils/mkdirSafe.js';
 
 const execAsync = promisify(exec);
 
