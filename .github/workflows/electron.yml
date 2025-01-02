@@ -1,11 +1,6 @@
 name: build/electron
 run-name: Building and releasing electron app 🚀
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [labeled]
+on: [push, pull_request]
 
 jobs:
   release:
