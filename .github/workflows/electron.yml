@@ -38,7 +38,8 @@ jobs:
           name: ctt_mac
           path: |
             dist/*.dmg
-            dist/latest*.yml
+            dist/*.dmg.blockmap
+            dist/*.yml
 
       - name: "Upload windows artifact"
         if: ${{ startsWith(matrix.os, 'win') }}
