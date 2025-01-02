@@ -2,10 +2,8 @@ import path from 'path';
 import express from 'express';
 import expressWs from 'express-ws';
 
-import '../utils/startup.js';
-
-import usgsSearch from '../lib/usgs.js';
-import { JobQueue } from '../lib/jobs.js';
+import usgsSearch from './lib/usgs.js';
+import { JobQueue } from './lib/jobs.js';
 
 export const jobQueue = new JobQueue();
 

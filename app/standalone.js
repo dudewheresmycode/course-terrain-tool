@@ -1,7 +1,14 @@
+/**
+ * Run the server / websocket without Electron
+ * (for use in testing or hosting web apps?)
+ */
+import path from 'path';
+import express from 'express';
+import './utils/startup.js';
 import { app } from './server/index.js';
 
 const PORT = process.env.PORT || 3133;
-const DIST_PATH = path.resolve('../client/dist');
+const DIST_PATH = path.resolve('./client/dist');
 
 app.use(express.static(DIST_PATH));
 app.get('/', (req, res) => res.sendFile(path.join(DIST_PATH, 'index.html')));

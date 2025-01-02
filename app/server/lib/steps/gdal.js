@@ -4,8 +4,8 @@ import { spawn, exec } from 'child_process';
 import pMap from 'p-map';
 const execAsync = promisify(exec);
 
-const wmsDirectory = path.resolve(process.cwd(), process.env.CTT_ELECTRON ? '../server/wms' : 'wms');
-
+const wmsDirectory = path.resolve(process.cwd(), './app/server/wms');
+console.log('wmsDirectory', wmsDirectory);
 function runCommand(bin, options, onProgress) {
   let progess = 0;
   return new Promise((resolve, reject) => {

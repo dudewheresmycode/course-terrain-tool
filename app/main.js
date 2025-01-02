@@ -3,8 +3,8 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import express from 'express';
 
-import '../server/utils/startup.js';
-import { app as server } from '../server/server/index.js';
+import './utils/startup.js';
+import { app as server } from './server/index.js';
 import { verifyDependencies } from './conda/installer.js';
 
 const PORT = process.env.PORT || 3133;

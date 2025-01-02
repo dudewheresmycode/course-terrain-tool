@@ -34,3 +34,11 @@ iconutil -c icns /Users/brianrobinson/Projects/Personal/ctt-resources/icon.icons
 ```
 
 Source: https://gist.github.com/ansarizafar/6fa64f44aa933794c4d6638eec32b9aa
+
+### Extracting the ASAR
+
+For debugging purposes, we can extract the core app files from the bundled ASAR file.
+
+```bash
+npx @electron/asar extract app.asar ./asar
+```
