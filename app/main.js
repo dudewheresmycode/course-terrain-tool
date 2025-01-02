@@ -1,6 +1,7 @@
 // Modules to control application life and create native browser window
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
+import express from 'express';
 
 import '../server/utils/startup.js';
 import { app as server } from '../server/server/index.js';
@@ -8,24 +9,26 @@ import { verifyDependencies } from './conda/installer.js';
 
 const PORT = process.env.PORT || 3133;
 
-
 function createWindow () {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 700,
     webPreferences: {
-      preload: path.join(process.cwd(), 'preload.js')
+      preload: path.resolve(app.getAppPath(), './preload.js'),
+      // nodeIntegrationInWorker: true,
+      // contextIsolation: true,
+      // nodeIntegration: true,
     }
   });
 
   // and load the index.html of the app.
   // mainWindow.loadFile(path.join(process.cwd(), 'index.html'))
-  if (process.env.CTT_STATIC || process.env.NODE_ENV === 'production') {
+  if (process.env.CLIENT_DEV_MODE) {
     // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
-    mainWindow.loadURL('http://localhost:3133');
-  } else {
     mainWindow.loadURL('http://localhost:3030');
+  } else {
+    mainWindow.loadURL('http://localhost:3133');
   }
 
   // Open the DevTools.
@@ -68,6 +71,13 @@ app.on('window-all-closed', function () {
 
 function startServer() {
   return new Promise(resolve => {
+    
+    // server.get('/preload.js', (req, res) => res.sendFile(path.join(process.cwd(), './preload.js')));
+    const distPath = path.resolve(app.getAppPath(), '../client/dist');
+    console.log('distPath', distPath);
+    server.use(express.static(distPath));
+    server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+
     server.listen(PORT, () => {
       // we set CTC_DEBUG when we run the app in develop mode and 
       // proxy the server behind the webpack dev server

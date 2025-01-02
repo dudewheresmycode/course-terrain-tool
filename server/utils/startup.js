@@ -9,6 +9,6 @@ dotEnv.config({
   ]
 });
 
-if (!process.env.TERRAIN_DIR) {
-  throw new Error('TERRAIN_DIR environment variable must be set. Please refer to the documentation. (https://github.com/dudewheresmycode/course-terrain-tool#set-environment-variable)');
-}
+// if (!process.env.TERRAIN_DIR) {
+//   throw new Error('TERRAIN_DIR environment variable must be set. Please refer to the documentation. (https://github.com/dudewheresmycode/course-terrain-tool#set-environment-variable)');
+// }

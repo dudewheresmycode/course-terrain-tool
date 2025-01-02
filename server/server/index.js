@@ -7,7 +7,7 @@ import '../utils/startup.js';
 import usgsSearch from '../lib/usgs.js';
 import { JobQueue } from '../lib/jobs.js';
 
-const DIST_PATH = path.resolve(process.cwd(), '../client/dist');
+const DIST_PATH = path.resolve('../client/dist');
 
 export const jobQueue = new JobQueue();
 
@@ -16,8 +16,6 @@ export const wsInstance = expressWs(app);
 
 app.use(express.json());
 
-app.use(express.static(DIST_PATH));
-app.get('/', (req, res) => res.sendFile(path.join(DIST_PATH, 'index.html')));
 
 
 app.ws('/progress', (ws, req) => {
