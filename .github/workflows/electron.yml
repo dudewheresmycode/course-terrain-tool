@@ -31,7 +31,18 @@ jobs:
           # release: ${{ startsWith(github.ref, 'refs/tags/v') }}
       # - run: mkdir -p path/to/artifact
       # - run: echo hello > path/to/artifact/world.txt
-      - uses: actions/upload-artifact@v4
+      - name: "Upload mac artifact"
+        if: ${{ startsWith(matrix.os, 'mac') }}
+        uses: actions/upload-artifact@v4
         with:
-          name: ctt-${{ matrix.os }}
+          name: ctt_mac
+          path: |
+            dist/*.dmg
+            dist/latest*.yml
+
+      - name: "Upload windows artifact"
+        if: ${{ startsWith(matrix.os, 'win') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctt_windows
           path: dist
