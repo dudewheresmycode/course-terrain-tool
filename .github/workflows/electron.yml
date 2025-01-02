@@ -14,8 +14,13 @@ jobs:
       DEBUG: electron-builder
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
-      - name: Set vars
+      - name: Set vars on windows
+        if: ${{ startsWith(matrix.os, 'win') }}
         run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
+
+      - name: Set vars on windows
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $env:GITHUB_ENV
 
       - name: Check out Git repository
         uses: actions/checkout@v1
