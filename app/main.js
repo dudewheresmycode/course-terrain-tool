@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import '../server/utils/startup.js';
 import { app as server } from '../server/server/index.js';
+import { verifyDependencies } from './conda/installer.js';
 
 const PORT = process.env.PORT || 3133;
 
@@ -20,18 +21,26 @@ function createWindow () {
 
   // and load the index.html of the app.
   // mainWindow.loadFile(path.join(process.cwd(), 'index.html'))
-  // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
-  mainWindow.loadURL('http://localhost:3030');
+  if (process.env.CTT_STATIC || process.env.NODE_ENV === 'production') {
+    // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
+    mainWindow.loadURL('http://localhost:3133');
+  } else {
+    mainWindow.loadURL('http://localhost:3030');
+  }
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools()
+  // mainWindow.webContents.openDevTools()
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
+  
+  await verifyDependencies();
+  
   await startServer();
+
   createWindow();
 
   app.on('activate', function () {

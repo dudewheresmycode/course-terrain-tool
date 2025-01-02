@@ -3,7 +3,7 @@
   "scripts": {
     "debug": "webpack serve --mode development",
     "watch": "webpack --watch",
-    "build": "webpack"
+    "build": "webpack --mode development"
   },
   "dependencies": {
     "@babel/core": "^7.26.0",

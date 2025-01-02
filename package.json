@@ -32,5 +32,8 @@
   "devDependencies": {
     "concurrently": "^9.1.2",
     "electron-builder": "^25.1.8"
+  },
+  "volta": {
+    "node": "20.18.1"
   }
 }

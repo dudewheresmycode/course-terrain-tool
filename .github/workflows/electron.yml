@@ -2,64 +2,29 @@ name: build/electron
 run-name: Testing out GitHub Actions 🚀
 on: [push]
 jobs:
-  binaries:
-    name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
+  release:
     runs-on: ${{ matrix.os }}
+
     strategy:
-      fail-fast: false
       matrix:
-        os: ["macos-latest", "windows-latest"]
-        python-version: ["3.11"]
+        os: [macos-latest, windows-latest]
+
     steps:
-      - uses: conda-incubator/setup-miniconda@v3
+      - name: Check out Git repository
+        uses: actions/checkout@v1
+
+      - name: Install Node.js, NPM and Yarn
+        uses: actions/setup-node@v1
         with:
-          auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
-      - name: Conda info
-        shell: bash -el {0}
-        run: conda info
-      - name: Conda list
-        shell: pwsh
-        run: conda list
-      # - name: Create PDAL
-      #   shell: pwsh
-      #   run: conda create --yes --name myenv --channel conda-forge pdal
-      - name: Install PDAL
-        shell: pwsh
-        run: conda install --channel conda-forge pdal
-      - name: Verify 1
-        shell: pwsh
-        run: pdal --version
-      - name: Verify 2
-        shell: pwsh
-        run: conda list
-      - name: Verify 2
-        shell: pwsh
-        run: ls
+          node-version: 20
 
-  # release:
-  #   runs-on: ${{ matrix.os }}
+      - name: Build/release Electron app
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          # GitHub token, automatically provided to the action
+          # (No need to define this secret in the repo settings)
+          github_token: ${{ secrets.github_token }}
 
-  #   strategy:
-  #     matrix:
-  #       os: [macos-latest, windows-latest]
-
-  #   steps:
-  #     - name: Check out Git repository
-  #       uses: actions/checkout@v1
-
-  #     - name: Install Node.js, NPM and Yarn
-  #       uses: actions/setup-node@v1
-  #       with:
-  #         node-version: 20
-
-  #     - name: Build/release Electron app
-  #       uses: samuelmeuli/action-electron-builder@v1
-  #       with:
-  #         # GitHub token, automatically provided to the action
-  #         # (No need to define this secret in the repo settings)
-  #         github_token: ${{ secrets.github_token }}
-
-  #         # If the commit is tagged with a version (e.g. "v1.0.0"),
-  #         # release the app after building
-  #         release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          # If the commit is tagged with a version (e.g. "v1.0.0"),
+          # release the app after building
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}

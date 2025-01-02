@@ -4,12 +4,10 @@ import { styled } from '@mui/material';
 import Box from '@mui/material/Box';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 
-// import MapboxDraw from "@mapbox/mapbox-gl-draw";
-// import DrawRectangle from 'mapbox-gl-draw-rectangle-mode';
-
 import 'mapbox-gl/dist/mapbox-gl.css'
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
-// import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css'
+
+const MB_TOKEN_ENDPOINT = 'https://api.opengolfsim.com/mapbox/token';
 
 const MapElement = styled(Box)({
   width: '100%',
@@ -42,15 +40,6 @@ export const MapStyleURIs = [
   // SatelliteImage: 'mapbox://styles/mapbox/satellite-v9',
   // Street: 'mapbox://styles/mapbox/standard',
 ];
-
-mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
-
-// const modes = MapboxDraw.modes;
-// modes.draw_rectangle = DrawRectangle;
-
-function plusMinusDistance(longitude, latitude, kilometers) {
-  
-}
 
 function addKilometers(lngLat, kilometers) {
   const r_earth = 6378;
@@ -122,6 +111,7 @@ export default function Map(props) {
     if (props.onCoordinatesChanged) {
       props.onCoordinatesChanged({ inner: innerCoordinates, outer: outerCoordinates, center: centerPosition.toArray() });
     }
+    console.log('outerCoordinates', outerCoordinates);
     setPolygonData(INNER_ID, innerCoordinates);
     setPolygonData(OUTER_ID, outerCoordinates);
   }, [innerCoordinates, outerCoordinates]);
@@ -394,37 +384,42 @@ export default function Map(props) {
   }, [props.dataSource]);
 
   useEffect(() => {
-  
-    mapInstance.current = new mapboxgl.Map({
-      style: MapStyleURIs[0].uri,
-      boxZoom: false,
-      container: mapElement.current, // container ID
-      center: MAP_START_POINT, // starting position [lng, lat]. Note that lat must be set between -90 and 90
-      zoom: 10 // starting zoom
-    });
-    mapInstance.current.addControl(new MapboxGeocoder({
-      accessToken: mapboxgl.accessToken,
-      mapboxgl: mapboxgl,
-      types: ['place', 'address'].join(',')
-    }));
-    mapInstance.current.addControl(new mapboxgl.NavigationControl());
-    mapInstance.current.on('load', addLayers);
+    (async () => {
+      const { token } = await fetch(`${MB_TOKEN_ENDPOINT}?token=${btoa('mbt')}`).then(res => res.json());
+      mapboxgl.accessToken = token;
 
-    if (!markerInstance.current) {
-      markerInstance.current = new mapboxgl.Marker({
-        draggable: true
+      mapInstance.current = new mapboxgl.Map({
+        style: MapStyleURIs[0].uri,
+        boxZoom: false,
+        container: mapElement.current, // container ID
+        center: MAP_START_POINT, // starting position [lng, lat]. Note that lat must be set between -90 and 90
+        zoom: 10 // starting zoom
       });
-    }
-    
-    // mapInstance.current.on('contextmenu', handleMapClick);
-    mapInstance.current.on('click', handleMapClick);
+      mapInstance.current.addControl(new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl,
+        types: ['place', 'address'].join(',')
+      }));
+      mapInstance.current.addControl(new mapboxgl.NavigationControl());
+      mapInstance.current.on('load', addLayers);
+  
+      if (!markerInstance.current) {
+        markerInstance.current = new mapboxgl.Marker({
+          draggable: true
+        });
+      }
+      
+      // mapInstance.current.on('contextmenu', handleMapClick);
+      mapInstance.current.on('click', handleMapClick);
+  
+      // const currentPosition = markerInstance.current.getLngLat();
+      // console.log('props.distance', props.distance);
+      // console.log('currentPosition', currentPosition);
+      // if (currentPosition) {
+      //   updateBoxPosition(currentPosition);
+      // }
+    })();
 
-    // const currentPosition = markerInstance.current.getLngLat();
-    // console.log('props.distance', props.distance);
-    // console.log('currentPosition', currentPosition);
-    // if (currentPosition) {
-    //   updateBoxPosition(currentPosition);
-    // }
 
     return () => {
       console.log('clean up');

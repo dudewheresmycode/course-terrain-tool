@@ -44,7 +44,6 @@ function runCommand(bin, options, onProgress) {
 /**
  * requires:
  *  - gdalinfo
- *  - gdal_fillnodata
  */
 
 /**
@@ -75,6 +74,8 @@ export async function getGeoTiffStats(geoTiffPath) {
 
 /**
  * Interpolates missing elevation data in a DEM/TIFF file
+ * requires:
+ *  - gdal_fillnodata
  */
 export async function fillNoData(sourceFile, filenamePrefix, resolution, outputDirectory) {
   const destFile = path.join(outputDirectory, `${filenamePrefix}_terrain_${Math.round(resolution * 100)}cm.tif`);
@@ -89,6 +90,9 @@ export async function fillNoData(sourceFile, filenamePrefix, resolution, outputD
 /**
  * Converts the GeoTIFF to a raw heightmap file using GDAL
  * Source: https://alastaira.wordpress.com/2013/11/12/importing-dem-terrain-heightmaps-for-unity-using-gdal/
+ * 
+ * requires:
+ * - gdal_translate
  */
 export async function geoTiffToRaw(sourceFile, stats) {
   const input = path.parse(sourceFile);
@@ -122,16 +126,20 @@ export function cropGeoTIFFToCoordinates(coordinates) {
   const wkt = `POLYGON ((${coordinates.map(coord => coord.join(' ')).join(', ')}))`;
 }
 
-export function geoTIFFMerge() {
-  // gdal_merge -o merge.tif -n 0 image1.tif image2.tif image3.tif image4.tif  
-}
-
+/**
+ * requires:
+ * - gdaldem
+ */
 export async function geoTIFFHillShade(sourceFile, outputDirectory) {
   const destFile = path.join(outputDirectory, 'hillshade.tif');
   await runCommand('gdaldem', [ 'hillshade', '-compute_edges', sourceFile, destFile ]);
   return tifToJPG(destFile);
 }
 
+/**
+ * requires:
+ * - gdal_translate
+ */
 export async function tifToJPG(sourceFile, rgb = false) {
   const input = path.parse(sourceFile);
   const destFile = path.join(input.dir, `${input.name}_8192x8192.jpg`);

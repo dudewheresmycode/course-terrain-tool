@@ -10,8 +10,8 @@ import { Typography } from '@mui/material';
 import { FakeInput, SmallInput } from './RangeInput';
 
 export default function DistanceInput(props) {
-  const [value, setValue] = useState(props.defaultValue); // default 2km
-  const [distanceEnabled, setDistanceEnabled] = useState(true);
+  const [value, setValue] = useState(props.defaultValue || 2); // default 2km
+  const [distanceEnabled, setDistanceEnabled] = useState(props.defaultChecked);
 
   const handleSliderChange = (event, newValue) => {
     setValue(newValue);
@@ -54,7 +54,7 @@ export default function DistanceInput(props) {
           min={props.min || 0.1}
           step={0.05}
           max={props.max || 10}
-          disabled={!distanceEnabled || props.disabled}
+          disabled={(props.optional && !distanceEnabled) || props.disabled}
           // color="secondary"
           value={typeof value === 'number' ? value : 0}
           onChange={handleSliderChange}
@@ -65,7 +65,7 @@ export default function DistanceInput(props) {
         <SmallInput
           value={value}
           size="small"
-          disabled={!distanceEnabled || props.disabled}
+          disabled={props.optional && !distanceEnabled || props.disabled}
           onChange={handleInputChange}
           onBlur={handleBlur}
           inputProps={{

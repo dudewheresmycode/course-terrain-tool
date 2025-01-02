@@ -7,7 +7,7 @@ import '../utils/startup.js';
 import usgsSearch from '../lib/usgs.js';
 import { JobQueue } from '../lib/jobs.js';
 
-const DIST_PATH = path.resolve(process.cwd(), 'client/dist');
+const DIST_PATH = path.resolve(process.cwd(), '../client/dist');
 
 export const jobQueue = new JobQueue();
 
