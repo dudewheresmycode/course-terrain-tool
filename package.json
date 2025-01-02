@@ -5,22 +5,32 @@
   "workspaces": [
     "client",
     "server",
-    "electron"
+    "app"
   ],
+  "main": "app/main.js",
+  "build": {
+    "npmRebuild": false,
+    "appId": "com.opengolfsim.ctt",
+    "mac": {
+      "category": "public.app-category.developer-tools"
+    }
+  },
   "scripts": {
+    "app:dir": "electron-builder --dir",
+    "app:dist": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1",
     "client": "npm run debug --workspace=client",
     "server": "npm start --workspace=server",
     "build": "npm run build --workspace=client",
     "develop": "CTC_DEBUG=1 concurrently --kill-others 'npm run debug --workspace=client' 'npm start --workspace=server'",
-    "start": "npm start --workspace=server"
+    "start": "npm start --workspace=server",
+    "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^9.1.2"
-  },
-  "dependencies": {
+    "concurrently": "^9.1.2",
+    "electron-builder": "^25.1.8"
   }
 }

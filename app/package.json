@@ -1,0 +1,19 @@
+{
+  "name": "ctt-electron",
+  "description": "Course Terrain Tool",
+  "version": "1.0.0",
+  "author": {
+    "name": "dudewheresmycode",
+    "url": "https://github.com/dudewheresmycode"
+  },
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "CTT_ELECTRON=1 electron .",
+    "app:dir": "electron-builder --dir",
+    "app:dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1"
+  }
+}
