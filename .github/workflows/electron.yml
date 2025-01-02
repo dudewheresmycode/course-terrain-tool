@@ -8,7 +8,8 @@ jobs:
     strategy:
       matrix:
         os: [macos-13]
-
+    env:
+      DEBUG: electron-builder
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v1
@@ -18,6 +19,10 @@ jobs:
         with:
           node-version: 20
 
+      # runs:
+      #   using: node12
+      #   main: builder.js
+
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1
         with:
@@ -25,6 +30,7 @@ jobs:
           # (No need to define this secret in the repo settings)
           github_token: ${{ secrets.github_token }}
           # args: --publish always
+          # args: DEBUG=electron-builder
           # If the commit is tagged with a version (e.g. "v1.0.0"),
           # release the app after building
           # release: true
