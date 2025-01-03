@@ -41,12 +41,19 @@ jobs:
       # - name: List files
       #   working-directory: ${{ github.workspace }}
       #   run: ls ../
+      - name: Install Microsoft Edge
+        run: |
+          brew update
+          brew install proj
 
       - name: Build GDAL
         uses: threeal/cmake-action@v2.1.0
         with:
           build-dir: gdal-build
           source-dir: ../gdal-src
+          options: |
+            GDAL_BUILD_OPTIONAL_DRIVERS=OFF
+            OGR_BUILD_OPTIONAL_DRIVERS=OFF
 
       - name: "Upload artifact"
         uses: actions/upload-artifact@v4
