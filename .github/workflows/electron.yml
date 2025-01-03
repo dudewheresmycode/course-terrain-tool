@@ -13,15 +13,15 @@ jobs:
     steps:
       - name: Check out GDAL
         uses: actions/checkout@v1
-          with:
-            repository: OSGeo/gdal
-            path: gdal-source
+        with:
+          repository: OSGeo/gdal
+          path: gdal-source
 
       - name: Build GDAL
         uses: threeal/cmake-action@v2.1.0
-          with:
-            build-dir: gdal-build
-            source-dir: gdal-source
+        with:
+          build-dir: gdal-build
+          source-dir: gdal-source
 
       - name: "Upload artifact"
         if: ${{ matrix.os == 'macos-13' }}
