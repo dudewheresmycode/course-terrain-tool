@@ -27,7 +27,9 @@ jobs:
         run: cd gdal-src && ls
 
       - name: Git status
-        run: cd gdal-src && git status
+        run: git status
+          with:
+            working-directory: gdal-src
 
       # - name: Build GDAL
       #   uses: threeal/cmake-action@v2.1.0
