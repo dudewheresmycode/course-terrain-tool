@@ -21,6 +21,11 @@ jobs:
           fetch-depth: 1
           fetch-tags: false
 
+      - name: Install deps
+        run: |
+          brew update
+          brew install proj
+
       - name: Build PDAL
         uses: threeal/cmake-action@v2.1.0
         with:
