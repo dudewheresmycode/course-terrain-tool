@@ -12,41 +12,47 @@ jobs:
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
       - name: Create source dir
-        run: mkdir -p gdal-src
+        run: mkdir -p gdal-build
 
       - name: Check out GDAL
         uses: actions/checkout@v1
         with:
-          path: ${{ github.workspace }}/gdal-src
+          path: gdal-src
           repository: OSGeo/gdal
           ref: stable
           fetch-depth: 1
           fetch-tags: false
 
-      - name: Workspace
-        run: echo "${{ github.workspace }}"
+      # - name: Set gdal path
+      # run: echo "GDAL_SRC=$(echo "$(cd "$(dirname "$1")"; pwd)/$(basename "$1")")" >> $env:GITHUB_ENV
 
-      - name: Current files
-        run: pwd
+      # - name: GDAL Path
+      #   run: echo "${{ env.GDAL_SRC }}"
 
-      - name: List files
-        run: ls "${{ github.workspace }}"
+      # - name: Workspace
+      #   run: echo "${{ github.workspace }}"
 
-      - name: List files
-        working-directory: ${{ github.workspace }}
-        run: ls ../
+      # - name: Current files
+      #   run: pwd
 
-      # - name: Build GDAL
-      #   uses: threeal/cmake-action@v2.1.0
-      #   with:
-      #     build-dir: gdal-build
-      #     source-dir: gdal-src/gdal
+      # - name: List files
+      #   run: ls "${{ github.workspace }}"
 
-      # - name: "Upload artifact"
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: gdal_${{ matrix.os }}
-      #     path: gdal-src
+      # - name: List files
+      #   working-directory: ${{ github.workspace }}
+      #   run: ls ../
+
+      - name: Build GDAL
+        uses: threeal/cmake-action@v2.1.0
+        with:
+          build-dir: gdal-build
+          source-dir: ../gdal-src
+
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdal_${{ matrix.os }}
+          path: gdal-build
 
   # release:
   #   if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
