@@ -16,8 +16,8 @@ jobs:
 
       - name: Check out GDAL
         uses: actions/checkout@v1
-        working-directory: gdal-src
         with:
+          working-directory: gdal-src
           repository: OSGeo/gdal
           ref: stable
           fetch-depth: 1
