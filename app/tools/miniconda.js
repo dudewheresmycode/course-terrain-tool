@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+import fs from 'fs';
+import path from 'path';
 
 import {
   runCommand,
@@ -8,13 +8,13 @@ import {
   execAsync,
   getInstallDirectory,
   getMinicondaDirectory,
-} from "./utils.js";
+} from './utils.js';
 import {
   MC_WIN_INSTALLER_URL,
   MC_MAC_INSTALLER_URL,
   MC_MAC_ARM64_INSTALLER_URL,
-} from "../constants.js";
-import mkdirSafe from "../utils/mkdirSafe.js";
+} from '../constants.js';
+import mkdirSafe from '../utils/mkdirSafe.js';
 
 let cachedPackages;
 
@@ -30,12 +30,12 @@ export async function installCondaMac() {
   // download https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
   // bash ~/miniconda.sh -b -p $HOME/miniconda
   let bashUrl = MC_MAC_INSTALLER_URL;
-  if (process.arch === "amd64") {
+  if (process.arch === 'amd64') {
     bashUrl = MC_MAC_ARM64_INSTALLER_URL;
   }
   const localInstallerPath = path.join(
     getInstallDirectory(),
-    "setup_miniconda.sh"
+    'setup_miniconda.sh'
   );
   await downloadCondaInstaller(bashUrl, localInstallerPath);
   console.log(`Downloaded ${bashUrl}\n-> ${localInstallerPath}`);
@@ -52,12 +52,12 @@ export async function installCondaMac() {
    * -m           disable the creation of menu items / shortcuts
    */
   // install minicon in silent mode via bash
-  await runCommand("bash", [
+  await runCommand('bash', [
     localInstallerPath,
-    "-b",
-    "-u",
-    "-m",
-    "-p",
+    '-b',
+    '-u',
+    '-m',
+    '-p',
     condaInstallDir,
   ]);
   // clean up
@@ -69,7 +69,7 @@ export async function installCondaWindows() {
   // (Source: https://docs.anaconda.com/miniconda/install/)
   const localInstallerPath = path.join(
     getInstallDirectory(),
-    "setup_miniconda.exe"
+    'setup_miniconda.exe'
   );
   await downloadCondaInstaller(MC_WIN_INSTALLER_URL, localInstallerPath);
 
@@ -82,15 +82,15 @@ export async function installCondaWindows() {
 
   // install minicon via powershell
   await runCommand(
-    "Start-Process",
+    'Start-Process',
     [
-      "-FilePath",
+      '-FilePath',
       localInstallerPath,
-      "-ArgumentList",
+      '-ArgumentList',
       `@("/S", "/D=${condaInstallDir}")`,
-      "-Wait",
+      '-Wait',
     ],
-    "powershell.exe"
+    'powershell.exe'
   );
 
   // clean up
@@ -103,14 +103,14 @@ export async function installToolsWithConda(condaBin, installList) {
     return;
   }
   await runCommand(condaBin, [
-    "create",
-    "--yes",
-    "--prefix",
+    'create',
+    '--yes',
+    '--prefix',
     condaEnvDir,
     // useful for testing
     // '--dry-run',
-    "--channel",
-    "conda-forge",
+    '--channel',
+    'conda-forge',
     ...installList,
   ]);
 }
@@ -119,7 +119,7 @@ export async function verifyCondaPackage(condaBin, packageName) {
   const condaEnvDir = getMiniCondaEnvironmentPath();
   // only run this fetch once
   if (!fs.existsSync(condaEnvDir)) {
-    console.log("Conda environment not setup.");
+    console.log('Conda environment not setup.');
     return;
   }
   if (!cachedPackages) {
@@ -130,6 +130,6 @@ export async function verifyCondaPackage(condaBin, packageName) {
   }
   const packageInList = cachedPackages.some((pkg) => pkg.name === packageName);
   if (packageInList) {
-    return { type: "conda", key: packageName };
+    return { type: 'conda', key: packageName };
   }
 }

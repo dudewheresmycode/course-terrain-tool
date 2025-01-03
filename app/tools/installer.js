@@ -1,19 +1,20 @@
-import fs from "node:fs";
+import fs from 'node:fs';
 
-import { GDAL_BINARIES } from "../constants.js";
-import mkdirSafe from "../utils/mkdirSafe.js";
+import { GDAL_BINARIES } from '../constants.js';
+import mkdirSafe from '../utils/mkdirSafe.js';
 import {
   getInstallDirectory,
   getMiniCondaScriptPath,
   findBinaryPath,
-} from "./utils.js";
-import { checkBrewSupport, installToolsWithBrew } from "./homebrew.js";
+} from './utils.js';
+import { checkBrewSupport, installToolsWithBrew } from './homebrew.js';
 import {
-  installToolsWithConda,
-  verifyCondaPackage,
+  // installToolsWithConda,
+  // verifyCondaPackage,
   installCondaMac,
   installCondaWindows,
-} from "./miniconda.js";
+} from './miniconda.js';
+import { installMiniforge, getCondaScriptPath, installToolsWithConda, verifyCondaPackage } from './miniforge.js';
 
 const tools = {
   platform: process.platform,
@@ -37,33 +38,44 @@ async function checkRequiredGDALBinaries() {
 }
 
 export async function verifyDependencies() {
-  tools.conda = await findBinaryPath("conda");
+  tools.conda = await findBinaryPath('conda');
   tools.homebrew = await checkBrewSupport();
 
-  const pdal = await findBinaryPath("pdal");
-  if (pdal) {
-    tools.pdal = pdal;
-  }
-  const gdal = await checkRequiredGDALBinaries();
-  if (gdal) {
-    tools.gdal = gdal;
-  }
+  // const pdal = await findBinaryPath('pdal');
+  // if (pdal) {
+  //   tools.pdal = pdal;
+  // }
+  // const gdal = await checkRequiredGDALBinaries();
+  // if (gdal) {
+  //   tools.gdal = gdal;
+  // }
 
   if (!tools.conda) {
     // see if we've installed in our home directory
-    const condaScriptPath = getMiniCondaScriptPath();
-    if (fs.existsSync(condaScriptPath)) {
-      tools.conda = condaScriptPath;
+    // const condaScriptPath = getMiniCondaScriptPath();
+    // if (fs.existsSync(condaScriptPath)) {
+    //   tools.conda = condaScriptPath;
+    // }
+    // check if we've already installed conda to our isolated env
+    const condaBin = getCondaScriptPath();
+    if (fs.existsSync(condaBin)) {
+      tools.conda = condaBin;
     }
   }
-  if (!tools.pdal && tools.conda) {
+  // check if we've already installed conda to our isolated env
+  if ((!tools.pdal || !tools.gdal) && tools.conda) {
     // check conda for PDAL
-    tools.pdal = await verifyCondaPackage(tools.conda, "pdal");
-    tools.gdal = await verifyCondaPackage(tools.conda, "gdal");
+    tools.pdal = await verifyCondaPackage(tools.conda, 'pdal');
+    tools.gdal = await verifyCondaPackage(tools.conda, 'gdal');
   }
 
   tools.passed = tools.pdal && tools.gdal ? true : false;
   return tools;
+}
+
+function handleError(sender, error) {
+  sender.send('install-error', error);
+  throw new Error(error);
 }
 
 export async function installDependencies(sender) {
@@ -71,84 +83,89 @@ export async function installDependencies(sender) {
     await verifyDependencies();
   }
   if (tools.passed) {
-    console.log("Nothing to install");
-    return sender.send("install-error", "Nothing to install");
+    handleError(sender, 'All dependencies have been met. Try restarting the app.');
+  }
+
+  const installList = [!tools.gdal && 'gdal', !tools.pdal && 'pdal'].filter(
+    Boolean
+  );
+  if (!installList.length) {
+    handleError(sender, 'All dependencies have been met. Try restarting the app.');
   }
 
   const installDir = getInstallDirectory();
   mkdirSafe(installDir);
 
-  const installList = [!tools.gdal && "gdal", !tools.pdal && "pdal"].filter(
-    Boolean
-  );
-  if (!installList.length) {
-    console.log("Nothing to install");
-    sender.send("install-error", "Nothing to install");
-    return;
+  if (process.platform === 'darwin') {
+    // Disable homebrew install for now
+    // if (tools.homebrew) {
+    //   console.log(
+    //     'Detected homebrew support, install with homebrew?',
+    //     installList
+    //   );
+    //   sender.send('install-progress', {
+    //     text: 'Installing packages with homebrew',
+    //   });
+    //   await installToolsWithBrew(installList);
+    //   return finishInstall(sender);
+    // }
   }
 
-  if (process.platform === "darwin") {
-    // MacOS Setup
+  // } else if (process.platform === 'win32') {
+  //   // Windows Setup
+  //   if (!tools.conda) {
+  //     // if conda is not installed, we'll install that first
+  //     sender.send('install-progress', {
+  //       text: 'Installing miniconda package manager',
+  //     });
+  //     // await installCondaWindows(tools.conda, installDir);
+  //   }
 
-    // try with homebrew if available
-    if (tools.homebrew) {
-      console.log(
-        "Detected homebrew support, install with homebrew?",
-        installList
-      );
-      sender.send("install-progress", {
-        text: "Installing packages with homebrew",
-      });
-      await installToolsWithBrew(installList);
-      return finishInstall(sender);
-    }
+  //   sender.send('install-progress', {
+  //     text: `Installing packages with conda (${installList.join(', ')})`,
+  //   });
+  //   await installToolsWithConda(tools.conda, installList);
+  // } else {
+  //   // We currently only support Windows and Mac
+  //   const error = `Unsupported platform ${process.platform}`;
+  //   sender.send('install-error', error);
+  //   throw new Error(error);
+  // }
 
-    // fallback to conda
-    if (!tools.conda) {
-      sender.send("install-progress", {
-        text: "Installing miniconda package manager",
-      });
-      await installCondaMac(installDir);
-    }
 
-    sender.send("install-progress", {
-      text: `Installing packages with conda (${installList.join(", ")})`,
+  // fallback to conda
+  if (!tools.conda) {
+    sender.send('install-progress', {
+      text: 'Installing miniforge package manager',
     });
-    await installToolsWithConda(tools.conda, installList);
-  } else if (process.platform === "win32") {
-    // Windows Setup
+    tools.conda = await installMiniforge(installDir);
     if (!tools.conda) {
-      // if conda is not installed, we'll install that first
-      sender.send("install-progress", {
-        text: "Installing miniconda package manager",
-      });
-      await installCondaWindows(tools.conda, installDir);
+      handleError(sender, 'Something went wrong during installation');
     }
-
-    sender.send("install-progress", {
-      text: `Installing packages with conda (${installList.join(", ")})`,
-    });
-    await installToolsWithConda(tools.conda, installList);
-  } else {
-    // We currently only support Windows and Mac
-    const error = `Unsupported platform ${process.platform}`;
-    sender.send("install-error", error);
-    throw new Error(error);
+    // sender.send('install-progress', {
+    //   text: 'Installing miniconda package manager',
+    // });
+    // await installCondaMac(installDir);
   }
+
+  sender.send('install-progress', {
+    text: `Installing packages with conda (${installList.join(', ')})`,
+  });
+  await installToolsWithConda(tools.conda, installList);
 
   await finishInstall(sender);
 }
 
 async function finishInstall(sender) {
-  sender.send("install-progress", { text: "Verifying installation of tools" });
+  sender.send('install-progress', { text: 'Verifying installation of tools' });
   await verifyDependencies();
 
   if (tools.gdal && tools.pdal) {
-    sender.send("install-finish", { tools });
+    sender.send('install-finish', { tools });
     return;
   }
-  sender.send("install-error", {
+  sender.send('install-error', {
     error:
-      "Something went wrong during the installation. Consider filing an issue.",
+      'Something went wrong during the installation. Consider filing an issue.',
   });
 }

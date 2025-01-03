@@ -1,5 +1,5 @@
-import js from "@eslint/js";
-import globals from "globals";
+import js from '@eslint/js';
+import globals from 'globals';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -7,9 +7,10 @@ export default [
   {
     languageOptions: { globals: globals.node },
     rules: {
-      "prefer-const": "warn",
-      "no-console": "off",
-      "no-unused-vars": "warn",
+      'prefer-const': 'warn',
+      'no-console': 'off',
+      'no-unused-vars': 'warn',
+      quotes: [2, 'single', { avoidEscape: true }],
     },
   },
 ];
