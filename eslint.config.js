@@ -3,6 +3,10 @@ import globals from 'globals';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+  {
+    // TODO: setup separate React lint rules
+    ignores: ['client/'],
+  },
   js.configs.recommended,
   {
     languageOptions: { globals: globals.node },

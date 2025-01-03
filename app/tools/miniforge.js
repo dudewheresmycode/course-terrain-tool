@@ -142,6 +142,7 @@ export async function installToolsWithConda(condaBin, installList) {
   await runCommand(condaBin, [
     'create',
     '--yes',
+    '--json',
     '--prefix',
     condaEnvDir,
     // useful for testing
@@ -156,5 +157,5 @@ export async function installToolsWithConda(condaBin, installList) {
 }
 
 export function condaClean(condaBin) {
-  return runCommand(condaBin, ['clean', '-all', '=y']);
+  return runCommand(condaBin, ['clean', '-all', '-y']);
 }

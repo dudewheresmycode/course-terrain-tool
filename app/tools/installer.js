@@ -4,16 +4,9 @@ import { GDAL_BINARIES } from '../constants.js';
 import mkdirSafe from '../utils/mkdirSafe.js';
 import {
   getInstallDirectory,
-  getMiniCondaScriptPath,
   findBinaryPath,
 } from './utils.js';
 import { checkBrewSupport, installToolsWithBrew } from './homebrew.js';
-import {
-  // installToolsWithConda,
-  // verifyCondaPackage,
-  installCondaMac,
-  installCondaWindows,
-} from './miniconda.js';
 import { installMiniforge, getCondaScriptPath, installToolsWithConda, verifyCondaPackage } from './miniforge.js';
 
 const tools = {
