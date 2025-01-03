@@ -12,10 +12,10 @@ jobs:
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
       - name: Check out GDAL
-        working-directory: gdal-source
         uses: actions/checkout@v1
           with:
-            repository: 'https://github.com/OSGeo/gdal.git'        
+            repository: OSGeo/gdal
+            path: gdal-source
 
       - name: Build GDAL
         uses: threeal/cmake-action@v2.1.0
