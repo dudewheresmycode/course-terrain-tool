@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, macos-latest, windows-latest]
+        os: [macos-latest]
     env:
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
@@ -23,8 +23,11 @@ jobs:
           fetch-tags: false
           path: gdal-src
 
-      # - name: Create source dir
-      #   run: ls gdal-src
+      - name: List files
+        run: ls
+
+      - name: Git status
+        run: git status
 
       # - name: Build GDAL
       #   uses: threeal/cmake-action@v2.1.0
@@ -33,7 +36,6 @@ jobs:
       #     source-dir: gdal-src/gdal
 
       - name: "Upload artifact"
-        if: ${{ matrix.os == 'macos-13' }}
         uses: actions/upload-artifact@v4
         with:
           name: gdal_${{ matrix.os }}
