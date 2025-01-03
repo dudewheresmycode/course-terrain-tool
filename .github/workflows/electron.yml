@@ -21,15 +21,14 @@ jobs:
           ref: stable
           fetch-depth: 1
           fetch-tags: false
-          path: gdal-src
+          path: ./gdal-src
+
+      - name: Current files
+        run: pwd
 
       - name: List files
         working-directory: gdal-src
-        run: ls
-
-      - name: Git status
-        working-directory: gdal-src
-        run: git status
+        run: pwd
 
       # - name: Build GDAL
       #   uses: threeal/cmake-action@v2.1.0
@@ -37,11 +36,11 @@ jobs:
       #     build-dir: gdal-build
       #     source-dir: gdal-src/gdal
 
-      - name: "Upload artifact"
-        uses: actions/upload-artifact@v4
-        with:
-          name: gdal_${{ matrix.os }}
-          path: gdal-src
+      # - name: "Upload artifact"
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: gdal_${{ matrix.os }}
+      #     path: gdal-src
 
   # release:
   #   if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
