@@ -41,7 +41,7 @@ jobs:
       # - name: List files
       #   working-directory: ${{ github.workspace }}
       #   run: ls ../
-      - name: Install Microsoft Edge
+      - name: Install PROJ
         run: |
           brew update
           brew install proj
