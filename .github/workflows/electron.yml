@@ -3,63 +3,93 @@ run-name: Building and releasing electron app 🚀
 on: push
 
 jobs:
-  dependencies:
+  pdal:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [macos-latest]
-    env:
-      GH_TOKEN: ${{ secrets.github_token }}
     steps:
       - name: Create source dir
-        run: mkdir -p gdal-build
+        run: mkdir -p pdal-build
 
-      - name: Check out GDAL
+      - name: Check out PDAL
         uses: actions/checkout@v1
         with:
-          path: gdal-src
-          repository: OSGeo/gdal
+          path: pdal-src
+          repository: PDAL/PDAL
           ref: stable
           fetch-depth: 1
           fetch-tags: false
 
-      # - name: Set gdal path
-      # run: echo "GDAL_SRC=$(echo "$(cd "$(dirname "$1")"; pwd)/$(basename "$1")")" >> $env:GITHUB_ENV
-
-      # - name: GDAL Path
-      #   run: echo "${{ env.GDAL_SRC }}"
-
-      # - name: Workspace
-      #   run: echo "${{ github.workspace }}"
-
-      # - name: Current files
-      #   run: pwd
-
-      # - name: List files
-      #   run: ls "${{ github.workspace }}"
-
-      # - name: List files
-      #   working-directory: ${{ github.workspace }}
-      #   run: ls ../
-      - name: Install PROJ
-        run: |
-          brew update
-          brew install proj
-
-      - name: Build GDAL
+      - name: Build PDAL
         uses: threeal/cmake-action@v2.1.0
         with:
-          build-dir: gdal-build
-          source-dir: ../gdal-src
-          options: |
-            GDAL_BUILD_OPTIONAL_DRIVERS=OFF
-            OGR_BUILD_OPTIONAL_DRIVERS=OFF
+          build-dir: pdal-build
+          source-dir: ../pdal-src
 
       - name: "Upload artifact"
         uses: actions/upload-artifact@v4
         with:
-          name: gdal_${{ matrix.os }}
-          path: gdal-build
+          name: pdal_${{ matrix.os }}
+          path: pdal-build
+
+  # gdal:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [macos-latest]
+  #   env:
+  #     GH_TOKEN: ${{ secrets.github_token }}
+  #   steps:
+  #     - name: Create source dir
+  #       run: mkdir -p gdal-build
+
+  #     - name: Check out GDAL
+  #       uses: actions/checkout@v1
+  #       with:
+  #         path: gdal-src
+  #         repository: OSGeo/gdal
+  #         ref: stable
+  #         fetch-depth: 1
+  #         fetch-tags: false
+
+  #     # - name: Set gdal path
+  #     # run: echo "GDAL_SRC=$(echo "$(cd "$(dirname "$1")"; pwd)/$(basename "$1")")" >> $env:GITHUB_ENV
+
+  #     # - name: GDAL Path
+  #     #   run: echo "${{ env.GDAL_SRC }}"
+
+  #     # - name: Workspace
+  #     #   run: echo "${{ github.workspace }}"
+
+  #     # - name: Current files
+  #     #   run: pwd
+
+  #     # - name: List files
+  #     #   run: ls "${{ github.workspace }}"
+
+  #     # - name: List files
+  #     #   working-directory: ${{ github.workspace }}
+  #     #   run: ls ../
+  #     - name: Install PROJ
+  #       run: |
+  #         brew update
+  #         brew install proj
+
+  #     - name: Build GDAL
+  #       uses: threeal/cmake-action@v2.1.0
+  #       with:
+  #         build-dir: gdal-build
+  #         source-dir: ../gdal-src
+  #         options: |
+  #           GDAL_BUILD_OPTIONAL_DRIVERS=OFF
+  #           OGR_BUILD_OPTIONAL_DRIVERS=OFF
+
+  #     - name: "Upload artifact"
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: gdal_${{ matrix.os }}
+  #         path: gdal-build
 
   # release:
   #   if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
