@@ -24,12 +24,12 @@ jobs:
           path: gdal-src
 
       - name: List files
-        run: cd gdal-src && ls
+        working-directory: gdal-src
+        run: ls
 
       - name: Git status
+        working-directory: gdal-src
         run: git status
-        with:
-          working-directory: gdal-src
 
       # - name: Build GDAL
       #   uses: threeal/cmake-action@v2.1.0
