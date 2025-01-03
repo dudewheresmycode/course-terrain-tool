@@ -18,7 +18,7 @@ function InstallerProgress(props) {
   return (
     <DialogContent>
       <DialogContent sx={{ padding: 10 }}>
-        <LinearProgress variant={props.progress.percent ? 'determinate' : 'indeterminate'} value={props.progress.percent || 0} />
+        <LinearProgress variant="indeterminate" />
         <Typography sx={{ mt: 5, textAlign: 'center' }}>{props.progress.text}</Typography>
       </DialogContent>
     </DialogContent>
@@ -36,11 +36,7 @@ function InstallerContent(props) {
       </DialogContent>
     )
   }
-  if (props.progress) {
-    return (
-      <InstallerProgress progress={props.progress} />
-    )
-  }
+
   if (props.finished) {
     return (
       <>
@@ -54,6 +50,11 @@ function InstallerContent(props) {
           <Button onClick={props.onClose}>Done</Button>
         </DialogActions>
       </>
+    )
+  }
+  if (props.progress) {
+    return (
+      <InstallerProgress progress={props.progress} />
     )
   }
 

@@ -165,7 +165,7 @@ export async function installDependencies(sender) {
   mkdirSafe(installDir);
 
   if (!tools.conda) {
-    sender.send('install-progress', { text: 'Installing miniconda package manager', percent: (1 / 3) * 100 });
+    sender.send('install-progress', { text: 'Installing miniconda package manager' });
     if (process.platform === 'darwin') {
       await installCondaMac(installDir);
     } else if (process.platform === 'win32') {
@@ -195,7 +195,7 @@ export async function installDependencies(sender) {
     sender.send('install-error', 'Nothing to install');
     return;
   }
-  sender.send('install-progress', { text: `Installing required packages (${installList.length})`, percent: (2 / 3) * 100 });
+  sender.send('install-progress', { text: `Installing packages (${installList.join(', ')})` });
 
 
   const condaEnvDir = getMiniCondaEnvironmentPath();
@@ -214,11 +214,11 @@ export async function installDependencies(sender) {
     ]);
   }
 
-  sender.send('install-progress', { text: `Verifying package installation`, percent: (2.5 / 3) * 100 });
+  sender.send('install-progress', { text: 'Verifying installation of tools' });
 
   await verifyDependencies();
   if (tools.gdal && tools.pdal) {
-    sender.send('install-progress', { text: `Finishing up`, percent: 100 });
+    sender.send('install-progress', { text: 'Finishing up' });
   }
   sender.send('install-finish', { tools });
 
