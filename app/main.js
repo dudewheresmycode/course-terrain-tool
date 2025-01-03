@@ -5,7 +5,7 @@ import express from 'express';
 
 import './utils/startup.js';
 import { app as server } from './server/index.js';
-import { verifyDependencies, installDependencies } from './conda/installer.js';
+import { verifyDependencies, installDependencies } from './tools/installer.js';
 
 const PORT = process.env.PORT || 3133;
 
