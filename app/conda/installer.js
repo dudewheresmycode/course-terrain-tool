@@ -11,6 +11,9 @@ import mkdirSafe from '../utils/mkdirSafe.js';
 
 let tools;
 
+const MINICONDA_DIR_NAME = 'miniconda';
+const MINICONDA_ENV_NAME = 'ctt-env';
+
 const execAsync = promisify(exec);
 
 
@@ -75,15 +78,22 @@ async function checkRequiredGDALBinaries() {
 function getInstallDirectory() {
   return path.join(app.getPath('home'), 'CourseTerrainTool');
 }
+
 function getMinicondaDirectory() {
-  return path.join(getInstallDirectory(), 'miniconda');
+  return path.join(getInstallDirectory(), MINICONDA_DIR_NAME);
 }
+
 function getMiniCondaScriptPath() {
+  return path.join(getInstallDirectory(), MINICONDA_ENV_NAME);
+}
+
+function getMiniCondaEnvironmentPath() {
   return path.join(
     getMinicondaDirectory(),
     process.platform === 'win32' ? 'Scripts/conda.exe' : 'bin/conda'
   );
 }
+
 
 export async function verifyDependencies() {
 
@@ -187,8 +197,8 @@ export async function installDependencies(sender) {
   }
   sender.send('install-progress', { text: `Installing required packages (${installList.length})`, percent: (2 / 3) * 100 });
 
-  const condaEnvDir = path.join(getInstallDirectory(), 'ctt-env');
-  // mkdirSafe(condaEnvDir)
+
+  const condaEnvDir = getMiniCondaEnvironmentPath();
 
   // install 
   // conda create --yes --name cttenv --channel conda-forge installList.join(' ');
@@ -219,13 +229,15 @@ export async function installDependencies(sender) {
 
 let cachedPackages;
 async function verifyCondaPackage(packageName) {
+  const condaEnvDir = getMiniCondaEnvironmentPath();
   // only run this fetch once
   if (!fs.existsSync(condaEnvDir)) {
     console.log('Conda environment not setup.');
     return;
   }
   if (!cachedPackages) {
-    const condaEnvDir = path.join(getInstallDirectory(), 'ctt-env');
+    // const condaEnvDir = path.join(getInstallDirectory(), 'ctt-env');
+    const condaEnvDir = getMiniCondaEnvironmentPath();
     const res = await execAsync(`${tools.conda} list -p "${condaEnvDir}" --json`);
     cachedPackages = JSON.parse(res.stdout);
   }
