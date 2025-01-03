@@ -83,11 +83,11 @@ function getMinicondaDirectory() {
   return path.join(getInstallDirectory(), MINICONDA_DIR_NAME);
 }
 
-function getMiniCondaScriptPath() {
+function getMiniCondaEnvironmentPath() {
   return path.join(getInstallDirectory(), MINICONDA_ENV_NAME);
 }
 
-function getMiniCondaEnvironmentPath() {
+function getMiniCondaScriptPath() {
   return path.join(
     getMinicondaDirectory(),
     process.platform === 'win32' ? 'Scripts/conda.exe' : 'bin/conda'
