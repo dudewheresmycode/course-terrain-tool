@@ -9,6 +9,7 @@ import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import WarningIcon from '@mui/icons-material/Warning';
+import CheckIcon from '@mui/icons-material/Check';
 
 import LinkOut from './LinkOut';
 import { Box, Alert, LinearProgress, AlertTitle, Typography } from '@mui/material';
@@ -38,6 +39,21 @@ function InstallerContent(props) {
   if (props.progress) {
     return (
       <InstallerProgress progress={props.progress} />
+    )
+  }
+  if (props.finished) {
+    return (
+      <>
+        <DialogContent sx={{ textAlign: 'center', p: 5 }}>
+          <Box sx={{ mb: 2 }}>
+            <CheckIcon color="success" sx={{ fontSize: 48 }} />
+          </Box>
+          <Typography>Install Complete!</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={props.onClose}>Done</Button>
+        </DialogActions>
+      </>
     )
   }
 
@@ -98,7 +114,7 @@ function InstallerContent(props) {
 export default function InstallerDialog(props) {
   const [progress, setProgress] = useState();
   const [error, setError] = useState();
-  const [finished, setFinished] = useState();
+  const [finished, setFinished] = useState(true);
   const handleClose = (event, reason) => {
     if (reason && reason === "backdropClick") 
       return;
@@ -143,6 +159,7 @@ export default function InstallerDialog(props) {
         progress={progress}
         error={error}
         finished={finished}
+        onClose={props.onClose}
         onExit={handleExit}
         onInstall={handleInstall}
       />

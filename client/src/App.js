@@ -35,6 +35,8 @@ export default function App() {
   const [isOuterEnabled, setIsOuterEnabled] = useState(false);
   const [isDependencyCheckPending, setIsDependencyCheckPending] = useState(true);
   const [hasRequiredDependencies, setHasRequiredDependencies] = useState(false);
+  const [installerDialogOpen, setInstallerDialogOpen] = useState(false);
+
   // const [isOpen, setIsOpen] = useState(false);
 
   const handleDistanceChanged = useCallback((distance) => {
@@ -64,20 +66,23 @@ export default function App() {
     console.log('handleCoordinatesChange', coordinates);
     setCoodinates(coordinates);
   };
-
+  const handleInstallerDialogClose = () => {
+    setInstallerDialogOpen(false);
+  }
 
   useEffect(() => {
-    console.log('app rendered', window.courseterrain);
     window.courseterrain.verifyDependencies().then((report) => {
       console.log('passed', report);
+      if (!report.passed) {
+        setInstallerDialogOpen(true);
+      }
       setHasRequiredDependencies(report.passed);
-      setIsDependencyCheckPending(false)
+      setIsDependencyCheckPending(false);
+    }).catch(error => {
+      console.log(error);
+      alert('Unable to verify required tools!');
+      window.courseterrain.quitApp();
     });
-    
-    // .then((result) => {
-    //   console.log('result', result);
-    //   setIsPending(false);
-    // });
   }, []);
   
   return (
@@ -125,7 +130,7 @@ export default function App() {
           </Box>
         </Box>
       )}
-      <InstallerDialog open={true} />
+      <InstallerDialog open={installerDialogOpen} onClose={handleInstallerDialogClose} />
     </ThemeProvider>
   );
 }

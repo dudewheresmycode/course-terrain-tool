@@ -78,6 +78,12 @@ function getInstallDirectory() {
 function getMinicondaDirectory() {
   return path.join(getInstallDirectory(), 'miniconda');
 }
+function getMiniCondaScriptPath() {
+  return path.join(
+    getMinicondaDirectory(),
+    process.platform === 'win32' ? 'Scripts/conda.exe' : 'bin/conda'
+  );
+}
 
 export async function verifyDependencies() {
 
@@ -111,14 +117,11 @@ export async function verifyDependencies() {
   if (!tools.conda) {
     // see if we've installed in our home directory
     const installDir = getInstallDirectory();
-    const customCondaPath = path.join(
-      getMinicondaDirectory(),
-      process.platform === 'win32' ? 'Scripts/conda.exe' : 'bin/conda'
-    );
-    console.log('customCondaPath', customCondaPath);
-    if(fs.existsSync(customCondaPath)) {
+    const condaScriptPath = getMiniCondaScriptPath();
+    console.log('condaScriptPath', condaScriptPath);
+    if(fs.existsSync(condaScriptPath)) {
       console.log('exists!');
-      tools.conda = customCondaPath;
+      tools.conda = condaScriptPath;
     }
   }
   if (!tools.pdal && tools.conda) {
@@ -217,6 +220,10 @@ export async function installDependencies(sender) {
 let cachedPackages;
 async function verifyCondaPackage(packageName) {
   // only run this fetch once
+  if (!fs.existsSync(condaEnvDir)) {
+    console.log('Conda environment not setup.');
+    return;
+  }
   if (!cachedPackages) {
     const condaEnvDir = path.join(getInstallDirectory(), 'ctt-env');
     const res = await execAsync(`${tools.conda} list -p "${condaEnvDir}" --json`);
