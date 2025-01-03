@@ -3,7 +3,7 @@ run-name: Building and releasing electron app 🚀
 on: push
 
 jobs:
-  gdal:
+  gdal_mac:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -51,11 +51,16 @@ jobs:
         with:
           build-dir: gdal-build
           source-dir: ../gdal-src
+          args: --target install
           options: |
             GDAL_BUILD_OPTIONAL_DRIVERS=OFF
             OGR_BUILD_OPTIONAL_DRIVERS=OFF
+            CMAKE_DISABLE_FIND_PACKAGE_Arrow=ON
+            GDAL_USE_LIBKML=OFF
 
       # - name: install GDAL
+      #   run: make install
+      # run: echo "$PATH:$PATH:/" >> $env:PATH
 
       - name: Check out PDAL
         uses: actions/checkout@v1
