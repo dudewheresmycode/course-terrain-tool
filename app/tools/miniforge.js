@@ -110,6 +110,7 @@ export async function installMiniforge() {
       mfInstallDir,
     ]);
   } else if (process.platform === 'win32') {
+    console.log(`installing miniforge to: ${mfInstallDir}`);
     await runCommand(
       'start',
       [

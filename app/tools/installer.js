@@ -142,6 +142,10 @@ export async function installDependencies(sender) {
     if (!tools.conda) {
       handleError(sender, 'Something went wrong during installation');
     }
+    console.log(`Installed: ${tools.conda}`);
+    sender.send('install-progress', {
+      text: 'Miniforge installation completed',
+    });
     // sender.send('install-progress', {
     //   text: 'Installing miniconda package manager',
     // });
