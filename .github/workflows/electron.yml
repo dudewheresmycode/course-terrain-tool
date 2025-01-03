@@ -3,154 +3,65 @@ run-name: Building and releasing electron app 🚀
 on: push
 
 jobs:
-  gdal_mac:
+  release:
+    if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
     runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-13, macos-latest, windows-latest]
     env:
+      DEBUG: electron-builder
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
-      - name: Install PROJ
-        run: |
-          brew update
-          brew install proj gdal
+      - name: Set vars on windows
+        if: ${{ startsWith(matrix.os, 'win') }}
+        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
 
-      # - name: Create source dir
-      #   run: mkdir -p gdal-build
+      - name: Set vars on macos
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
 
-      # - name: Check out GDAL
-      #   uses: actions/checkout@v1
-      #   with:
-      #     path: gdal-src
-      #     repository: OSGeo/gdal
-      #     ref: stable
-      #     fetch-depth: 1
-      #     fetch-tags: false
-
-      # # - name: Set gdal path
-      # # run: echo "GDAL_SRC=$(echo "$(cd "$(dirname "$1")"; pwd)/$(basename "$1")")" >> $env:GITHUB_ENV
-
-      # # - name: GDAL Path
-      # #   run: echo "${{ env.GDAL_SRC }}"
-
-      # # - name: Workspace
-      # #   run: echo "${{ github.workspace }}"
-
-      # # - name: Current files
-      # #   run: pwd
-
-      # # - name: List files
-      # #   run: ls "${{ github.workspace }}"
-
-      # # - name: List files
-      # #   working-directory: ${{ github.workspace }}
-      # #   run: ls ../
-
-      # - name: Build GDAL
-      #   uses: threeal/cmake-action@v2.1.0
-      #   with:
-      #     build-dir: gdal-build
-      #     source-dir: ../gdal-src
-      #     options: |
-      #       GDAL_BUILD_OPTIONAL_DRIVERS=OFF
-      #       OGR_BUILD_OPTIONAL_DRIVERS=OFF
-      #       CMAKE_DISABLE_FIND_PACKAGE_Arrow=ON
-      #       GDAL_USE_LIBKML=OFF
-
-      # # - name: install GDAL
-      # #   run: make install
-      # # run: echo "$PATH:$PATH:/" >> $env:PATH
-
-      - name: Check out PDAL
+      - name: Check out repository
         uses: actions/checkout@v1
+
+      - name: Install Node.js, NPM and Yarn
+        uses: actions/setup-node@v1
         with:
-          path: pdal-src
-          repository: PDAL/PDAL
-          ref: stable
-          fetch-depth: 1
-          fetch-tags: false
+          node-version: 20
 
-      - name: Create build dir
-        run: mkdir -p pdal-build
+      - name: "npm install"
+        run: npm install
 
-      - name: Build PDAL
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          build-dir: pdal-build
-          source-dir: ../pdal-src
+      - name: "npm build"
+        run: npm run build
 
-      - name: "Upload GDAL"
+      - name: "electron-builder"
+        run: npx electron-builder --publish never
+
+      - name: "Upload mac artifact"
+        if: ${{ matrix.os == 'macos-latest' }}
         uses: actions/upload-artifact@v4
         with:
-          name: gdal_${{ matrix.os }}
-          path: gdal-build
+          name: CTT_MacOS_arm64_${{ env.SHORT_SHA }}
+          path: |
+            dist/*.dmg
+            dist/*.dmg.blockmap
+            dist/*.yml
 
-      - name: "Upload PDAL"
+      - name: "Upload mac artifact"
+        if: ${{ matrix.os == 'macos-13' }}
         uses: actions/upload-artifact@v4
         with:
-          name: pdal_${{ matrix.os }}
-          path: pdal-build
+          name: CTT_MacOS_amd64_${{ env.SHORT_SHA }}
+          path: |
+            dist/*.dmg
+            dist/*.dmg.blockmap
+            dist/*.yml
 
-  # release:
-  #   if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
-  #   runs-on: ${{ matrix.os }}
-
-  #   strategy:
-  #     matrix:
-  #       os: [macos-13, macos-latest, windows-latest]
-  #   env:
-  #     DEBUG: electron-builder
-  #     GH_TOKEN: ${{ secrets.github_token }}
-  #   steps:
-  #     - name: Set vars on windows
-  #       if: ${{ startsWith(matrix.os, 'win') }}
-  #       run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
-
-  #     - name: Set vars on macos
-  #       if: ${{ startsWith(matrix.os, 'macos') }}
-  #       run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
-
-  #     - name: Check out repository
-  #       uses: actions/checkout@v1
-
-  #     - name: Install Node.js, NPM and Yarn
-  #       uses: actions/setup-node@v1
-  #       with:
-  #         node-version: 20
-
-  #     - name: "npm install"
-  #       run: npm install
-
-  #     - name: "npm build"
-  #       run: npm run build
-
-  #     - name: "electron-builder"
-  #       run: npx electron-builder --publish never
-
-  #     - name: "Upload mac artifact"
-  #       if: ${{ matrix.os == 'macos-latest' }}
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: CTT_MacOS_arm64_${{ env.SHORT_SHA }}
-  #         path: |
-  #           dist/*.dmg
-  #           dist/*.dmg.blockmap
-  #           dist/*.yml
-
-  #     - name: "Upload mac artifact"
-  #       if: ${{ matrix.os == 'macos-13' }}
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: CTT_MacOS_amd64_${{ env.SHORT_SHA }}
-  #         path: |
-  #           dist/*.dmg
-  #           dist/*.dmg.blockmap
-  #           dist/*.yml
-
-  #     - name: "Upload windows artifact"
-  #       if: ${{ startsWith(matrix.os, 'win') }}
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: CTT_Windows_64_${{ env.SHORT_SHA }}
-  #         path: dist
+      - name: "Upload windows artifact"
+        if: ${{ startsWith(matrix.os, 'win') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: CTT_Windows_64_${{ env.SHORT_SHA }}
+          path: dist
