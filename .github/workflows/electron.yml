@@ -28,8 +28,8 @@ jobs:
 
       - name: Git status
         run: git status
-          with:
-            working-directory: gdal-src
+        with:
+          working-directory: gdal-src
 
       # - name: Build GDAL
       #   uses: threeal/cmake-action@v2.1.0
