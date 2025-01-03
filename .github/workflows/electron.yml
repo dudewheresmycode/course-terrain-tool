@@ -15,6 +15,9 @@ jobs:
         uses: actions/checkout@v1
         with:
           repository: OSGeo/gdal
+          ref: stable
+          fetch-depth: 1
+          fetch-tags: false
           path: gdal-source
 
       - name: Build GDAL
