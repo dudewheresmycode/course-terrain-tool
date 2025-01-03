@@ -16,12 +16,12 @@ jobs:
 
       - name: Check out GDAL
         uses: actions/checkout@v1
+        working-directory: gdal-src
         with:
           repository: OSGeo/gdal
           ref: stable
           fetch-depth: 1
           fetch-tags: false
-          path: ./gdal-src
 
       - name: Current files
         run: pwd
