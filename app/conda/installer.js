@@ -75,6 +75,9 @@ async function checkRequiredGDALBinaries() {
 function getInstallDirectory() {
   return path.join(app.getPath('home'), 'CourseTerrainTool');
 }
+function getMinicondaDirectory() {
+  return path.join(getInstallDirectory(), 'miniconda');
+}
 
 export async function verifyDependencies() {
 
@@ -108,10 +111,20 @@ export async function verifyDependencies() {
   if (!tools.conda) {
     // see if we've installed in our home directory
     const installDir = getInstallDirectory();
-    const customCondaPath = path.join(installDir, 'miniconda/bin/conda');
+    const customCondaPath = path.join(
+      getMinicondaDirectory(),
+      process.platform === 'win32' ? 'Scripts/conda.exe' : 'bin/conda'
+    );
+    console.log('customCondaPath', customCondaPath);
     if(fs.existsSync(customCondaPath)) {
+      console.log('exists!');
       tools.conda = customCondaPath;
     }
+  }
+  if (!tools.pdal && tools.conda) {
+    // check conda for PDAL
+    tools.pdal = await verifyCondaPackage('pdal');
+    tools.gdal = await verifyCondaPackage('gdal');
   }
 
   tools.passed = tools.pdal && tools.gdal ? true : false;
@@ -145,6 +158,11 @@ export async function installDependencies() {
     } else {
       throw new Error(`Unsupported platform ${process.platform}`);
     }
+    await verifyDependencies();
+
+    if (!tools.conda) {
+      throw new Error('Uanble to install conda');
+    }
   } else {
     console.log(`Conda already installed at: ${tools.conda}`);
   }
@@ -152,13 +170,14 @@ export async function installDependencies() {
   // do we need this?
   // await runCommand('conda', ['init']);
   
-  // const installList = [!!tools.gdal && 'gdal', !!tools.pdal && pdal].filter(Boolean);
-  const installList = ['pdal', 'gdal'];
+  const installList = [!tools.gdal && 'gdal', !tools.pdal && 'pdal'].filter(Boolean);
+  // const installList = ['pdal', 'gdal'];
   if (!installList.length) {
     console.log('Nothing to install');
     return;
   }
-  const condaEnvDir = path.join(installDir, 'ctt-env');
+
+  const condaEnvDir = path.join(getInstallDirectory(), 'ctt-env');
   // mkdirSafe(condaEnvDir)
 
   // install 
@@ -180,6 +199,20 @@ export async function installDependencies() {
   ]);
 }
 
+let cachedPackages;
+async function verifyCondaPackage(packageName) {
+  // only run this fetch once
+  if (!cachedPackages) {
+    const condaEnvDir = path.join(getInstallDirectory(), 'ctt-env');
+    const res = await execAsync(`${tools.conda} list -p "${condaEnvDir}" --json`);
+    cachedPackages = JSON.parse(res.stdout);
+  }
+  const packageInList = cachedPackages.some(pkg => pkg.name === packageName);
+  if (packageInList) {
+    return { type: 'conda', key: packageName };
+  }
+}
+
 async function downloadCondaInstaller(url, localSetupFile) {
   // clear out any previous installation of conda
   // QUESTION: should we remove all previously installed binaries in this case too?
@@ -189,9 +222,9 @@ async function downloadCondaInstaller(url, localSetupFile) {
   }
 }
 
-function runCommand(bin, options) {
+function runCommand(bin, options, shell) {
   return new Promise((resolve, reject) => {
-    const child = spawn(bin, options);
+    const child = spawn(bin, options, shell ? { shell } : undefined);
     child.stderr.on('data', data => console.log(`[miniconda]: ${data}`));
     child.stdout.on('data', data => console.log(`[miniconda]: ${data}`));
     child.on('close', code => {
@@ -219,8 +252,8 @@ export async function installCondaMac(appDir) {
   // const baseInstallDir = path.join(app.getPath('home'), 'CourseTerrainTools');
   // mkdirSafe(tempDir)
 
-  const condaTempDir = path.join(appDir, 'miniconda');
-  mkdirSafe(condaTempDir)
+  const condaTempDir = getMinicondaDirectory();
+  mkdirSafe(condaTempDir);
 
   console.log('condaTempDir', condaTempDir);
   /**
@@ -258,6 +291,20 @@ export async function installCondaMac(appDir) {
     await downloadCondaInstaller(WIN_INSTALLER_URL, localInstallerPath);
     console.log(`Downloaded ${WIN_INSTALLER_URL}\n-> ${localInstallerPath}`);
 
+    const condaTempDir = getMinicondaDirectory();
+    mkdirSafe(condaTempDir);
+  
+    // await runCommand('start', [
+    //   '/wait', '', localInstallerPath, '/S', `/D=${condaTempDir}`
+    // ]);
+
+    await runCommand('Start-Process', [
+      '-FilePath', localInstallerPath,
+      '-ArgumentList', `@("/S", "/D=${condaTempDir}")`,
+      // '/S', `/D=${condaTempDir}`,
+      '-Wait'
+    ], 'powershell.exe');
+    // "C:\Users\nueca\CourseTerrainTool\setup_miniconda.exe"
     // const res = await execAsync('install', {'shell':'powershell.exe'});
   // const child = spawn('pwsh.exe', [
   //   bashFilePath
