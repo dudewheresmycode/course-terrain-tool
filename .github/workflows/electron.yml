@@ -84,8 +84,8 @@ jobs:
       - name: "Upload PDAL"
         uses: actions/upload-artifact@v4
         with:
-          name: gdal_${{ matrix.os }}
-          path: gdal-build
+          name: pdal_${{ matrix.os }}
+          path: pdal-build
 
   # release:
   #   if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
