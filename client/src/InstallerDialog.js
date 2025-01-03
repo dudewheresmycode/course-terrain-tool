@@ -114,7 +114,7 @@ function InstallerContent(props) {
 export default function InstallerDialog(props) {
   const [progress, setProgress] = useState();
   const [error, setError] = useState();
-  const [finished, setFinished] = useState(true);
+  const [finished, setFinished] = useState(false);
   const handleClose = (event, reason) => {
     if (reason && reason === "backdropClick") 
       return;
