@@ -23,21 +23,21 @@ jobs:
           fetch-tags: false
           path: gdal-src
 
-      - name: Create source dir
-        run: ls gdal-src
+      # - name: Create source dir
+      #   run: ls gdal-src
 
-      - name: Build GDAL
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          build-dir: gdal-build
-          source-dir: gdal-src/gdal
+      # - name: Build GDAL
+      #   uses: threeal/cmake-action@v2.1.0
+      #   with:
+      #     build-dir: gdal-build
+      #     source-dir: gdal-src/gdal
 
       - name: "Upload artifact"
         if: ${{ matrix.os == 'macos-13' }}
         uses: actions/upload-artifact@v4
         with:
           name: gdal_${{ matrix.os }}
-          path: gdal-build
+          path: gdal-src
 
   # release:
   #   if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
