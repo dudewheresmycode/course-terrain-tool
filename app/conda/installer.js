@@ -139,29 +139,34 @@ export async function verifyDependencies() {
   // console.log(gdalVersion);
 }
 
-export async function installDependencies() {
+export async function installDependencies(sender) {
   if (!tools) {
     await verifyDependencies();
-    if (tools.passed) {
-      return;
-    }
+  }
+  if (tools.passed) {
+    console.log('Nothing to install');
+    return sender.send('install-error', 'Nothing to install');
   }
 
   const installDir = getInstallDirectory();
   mkdirSafe(installDir);
 
   if (!tools.conda) {
+    sender.send('install-progress', { text: 'Installing miniconda package manager', percent: (1 / 3) * 100 });
     if (process.platform === 'darwin') {
       await installCondaMac(installDir);
     } else if (process.platform === 'win32') {
       await installCondaWindows(installDir);
     } else {
-      throw new Error(`Unsupported platform ${process.platform}`);
+      const error = `Unsupported platform ${process.platform}`;
+      sender.send('install-error', error);
+      throw new Error(error);
     }
     await verifyDependencies();
 
     if (!tools.conda) {
-      throw new Error('Uanble to install conda');
+      sender.send('install-error', 'Unable to verify conda installation');
+      throw new Error('Unable to verify conda installation');
     }
   } else {
     console.log(`Conda already installed at: ${tools.conda}`);
@@ -174,8 +179,10 @@ export async function installDependencies() {
   // const installList = ['pdal', 'gdal'];
   if (!installList.length) {
     console.log('Nothing to install');
+    sender.send('install-error', 'Nothing to install');
     return;
   }
+  sender.send('install-progress', { text: `Installing required packages (${installList.length})`, percent: (2 / 3) * 100 });
 
   const condaEnvDir = path.join(getInstallDirectory(), 'ctt-env');
   // mkdirSafe(condaEnvDir)
@@ -194,9 +201,17 @@ export async function installDependencies() {
     ]);
   }
 
-  await runCommand(tools.conda, [
-    'run', '-p', condaEnvDir, 'pdal', '--version'
-  ]);
+  sender.send('install-progress', { text: `Verifying package installation`, percent: (2.5 / 3) * 100 });
+
+  await verifyDependencies();
+  if (tools.gdal && tools.pdal) {
+    sender.send('install-progress', { text: `Finishing up`, percent: 100 });
+  }
+  sender.send('install-finish', { tools });
+
+  // await runCommand(tools.conda, [
+  //   'run', '-p', condaEnvDir, 'pdal', '--version'
+  // ]);
 }
 
 let cachedPackages;
@@ -225,8 +240,8 @@ async function downloadCondaInstaller(url, localSetupFile) {
 function runCommand(bin, options, shell) {
   return new Promise((resolve, reject) => {
     const child = spawn(bin, options, shell ? { shell } : undefined);
-    child.stderr.on('data', data => console.log(`[miniconda]: ${data}`));
-    child.stdout.on('data', data => console.log(`[miniconda]: ${data}`));
+    child.stderr.on('data', data => console.log(`[${path.basename(bin)}]: ${data}`));
+    child.stdout.on('data', data => console.log(`[${path.basename(bin)}]: ${data}`));
     child.on('close', code => {
       console.log(`exited: ${code}`);
       if (code !== 0) {
@@ -248,14 +263,11 @@ export async function installCondaMac(appDir) {
   await downloadCondaInstaller(bashUrl, localInstallerPath);
   console.log(`Downloaded ${bashUrl}\n-> ${localInstallerPath}`);
 
-  // const res = await execAsync(`bash "${localBashFile}" -b -u -m -p "${appDir}"`);
-  // const baseInstallDir = path.join(app.getPath('home'), 'CourseTerrainTools');
-  // mkdirSafe(tempDir)
+  const condaInstallDir = getMinicondaDirectory();
 
-  const condaTempDir = getMinicondaDirectory();
-  mkdirSafe(condaTempDir);
+  // ensure the directory exists
+  mkdirSafe(condaInstallDir);
 
-  console.log('condaTempDir', condaTempDir);
   /**
    * 
    * -b           batch mode (no manual intervention)
@@ -263,51 +275,36 @@ export async function installCondaMac(appDir) {
    * -p PREFIX    install prefix, defaults to $PREFIX, must not contain spaces. 
    * -m           disable the creation of menu items / shortcuts
   */
+ // install minicon in silent mode via bash
   await runCommand('bash', [
     localInstallerPath,
     '-b', '-u', '-m',
-    '-p', condaTempDir
+    '-p', condaInstallDir
   ]);
-
-  // TODO: install PDAL/GDAL
-  // TODO: remove installer
-
-  // const res = await execAsync(`bash "${localInstallerPath}" -h`, { shell: 'bash' });
-  // console.log(res);
-
-  // const child = spawn('bash', [
-  //   bashFilePath
-  // ]);
-  // child.stderr.on('data', data => console.log(`stderr: ${data}`));
-  // child.stdout.on('data', data => console.log(`stdout: ${data}`));
-  // child.on('close', code => console.log(`exited with code: ${code}`));
+  // clean up
+  await fs.promises.unlink(localInstallerPath);
 }
   
   export async function installCondaWindows(appDir) {
-    // curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe -o miniconda.exe
     // (Source: https://docs.anaconda.com/miniconda/install/)
-    // pwsh
     const localInstallerPath = path.join(appDir, 'setup_miniconda.exe');
     await downloadCondaInstaller(WIN_INSTALLER_URL, localInstallerPath);
+
     console.log(`Downloaded ${WIN_INSTALLER_URL}\n-> ${localInstallerPath}`);
 
-    const condaTempDir = getMinicondaDirectory();
-    mkdirSafe(condaTempDir);
+    const condaInstallDir = getMinicondaDirectory();
   
-    // await runCommand('start', [
-    //   '/wait', '', localInstallerPath, '/S', `/D=${condaTempDir}`
-    // ]);
+    // ensure the directory exists
+    mkdirSafe(condaInstallDir);
 
+    // install minicon via powershell
     await runCommand('Start-Process', [
       '-FilePath', localInstallerPath,
-      '-ArgumentList', `@("/S", "/D=${condaTempDir}")`,
-      // '/S', `/D=${condaTempDir}`,
+      '-ArgumentList', `@("/S", "/D=${condaInstallDir}")`,
       '-Wait'
     ], 'powershell.exe');
-    // "C:\Users\nueca\CourseTerrainTool\setup_miniconda.exe"
-    // const res = await execAsync('install', {'shell':'powershell.exe'});
-  // const child = spawn('pwsh.exe', [
-  //   bashFilePath
-  // ]);
+    
+    // clean up
+    await fs.promises.unlink(localInstallerPath);
 
   }

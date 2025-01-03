@@ -52,8 +52,8 @@ app.whenReady().then(async () => {
   })
   
   ipcMain.on('install-tools', async (event) => {
-    event.sender.send('install-progress', { foo: 0 });
-    await installDependencies();
+    event.sender.send('install-progress', { text: 'Setting up installation' });
+    await installDependencies(event.sender);
   });
   ipcMain.handle('dependency-check', async (event) => {
     return verifyDependencies();

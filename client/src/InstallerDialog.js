@@ -11,36 +11,38 @@ import ListItemText from '@mui/material/ListItemText';
 import WarningIcon from '@mui/icons-material/Warning';
 
 import LinkOut from './LinkOut';
-import { Alert } from '@mui/material';
+import { Box, Alert, LinearProgress, AlertTitle, Typography } from '@mui/material';
 
-export default function InstallerDialog(props) {
-  const handleClose = (event, reason) => {
-    if (reason && reason === "backdropClick") 
-      return;
-    props.onClose();
-  }
-  const handleExit = () => {
-    window.courseterrain.quitApp();
-  }
-  const handleInstall = () => {
-    window.courseterrain.installTools();
-  }
-
-  const handleProgressUpdate = (event, data) => {
-    console.log('progress', event, data);
-  }
-  useEffect(() => {
-    window.courseterrain.addEventListener('install-progress', handleProgressUpdate);
-    return () => {
-      window.courseterrain.removeEventListener('install-progress', handleProgressUpdate);
-    }
-  }, []);
-  
+function InstallerProgress(props) {
   return (
-    <Dialog open={props.open} onClose={handleClose} disableEscapeKeyDown={true} fullWidth={true} maxWidth="md">
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-        <WarningIcon sx={{ mr: 1 }} /> Install Required Tools
-      </DialogTitle>
+    <DialogContent>
+      <DialogContent sx={{ padding: 10 }}>
+        <LinearProgress variant={props.progress.percent ? 'determinate' : 'indeterminate'} value={props.progress.percent || 0} />
+        <Typography sx={{ mt: 5, textAlign: 'center' }}>{props.progress.text}</Typography>
+      </DialogContent>
+    </DialogContent>
+  )
+}
+
+function InstallerContent(props) {
+  if (props.error) {
+    return (
+      <DialogContent>
+        <Alert severity="error">
+          <AlertTitle>Error installing tools</AlertTitle>
+          {props.error}
+        </Alert>
+      </DialogContent>
+    )
+  }
+  if (props.progress) {
+    return (
+      <InstallerProgress progress={props.progress} />
+    )
+  }
+
+  return (
+    <>
       <DialogContent>
         <DialogContentText>
           Course Terrain Tool depends on a couple libraries to process the LiDAR and TIFF files.
@@ -79,15 +81,71 @@ export default function InstallerDialog(props) {
         </Alert>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleExit}>Exit</Button>
+        <Button onClick={props.onExit}>Exit</Button>
         <Button
           variant="contained"
           color="primary"
-          onClick={handleInstall}
+          onClick={props.onInstall}
         >
           Install Required Tools
         </Button>
       </DialogActions>
+    </>
+  )
+}
+
+
+export default function InstallerDialog(props) {
+  const [progress, setProgress] = useState();
+  const [error, setError] = useState();
+  const [finished, setFinished] = useState();
+  const handleClose = (event, reason) => {
+    if (reason && reason === "backdropClick") 
+      return;
+    props.onClose();
+  }
+  const handleExit = () => {
+    window.courseterrain.quitApp();
+  }
+  const handleInstall = () => {
+    window.courseterrain.installTools();
+  }
+
+  const handleProgressUpdate = (_event, data) => {
+    console.log('handleProgressUpdate', data);
+    setProgress(data);
+  }
+  const handleFinished = (_event) => {
+    console.log('handleFinished');
+    setFinished(true);
+  }
+  const handleError = (_event, error) => {
+    console.log('handleError', error);
+    setError(error);
+  }
+  useEffect(() => {
+    window.courseterrain.addEventListener('install-progress', handleProgressUpdate);
+    window.courseterrain.addEventListener('install-finish', handleFinished);
+    window.courseterrain.addEventListener('install-error', handleError);
+    return () => {
+      window.courseterrain.removeEventListener('install-progress', handleProgressUpdate);
+      window.courseterrain.removeEventListener('install-finish', handleFinished);
+      window.courseterrain.removeEventListener('install-error', handleError);
+    }
+  }, []);
+  
+  return (
+    <Dialog open={props.open} onClose={handleClose} disableEscapeKeyDown={true} fullWidth={true} maxWidth="md">
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
+        <WarningIcon sx={{ mr: 1 }} /> Install Required Tools
+      </DialogTitle>
+      <InstallerContent
+        progress={progress}
+        error={error}
+        finished={finished}
+        onExit={handleExit}
+        onInstall={handleInstall}
+      />
     </Dialog>
   )
 }
