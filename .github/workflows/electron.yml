@@ -23,6 +23,9 @@ jobs:
           fetch-depth: 1
           fetch-tags: false
 
+      - name: Workspace
+        run: echo "${{ github.workspace }}"
+
       - name: Current files
         run: pwd
 
@@ -32,7 +35,7 @@ jobs:
 
       - name: List files
         working-directory: ${{ github.workspace }}
-        run: ls
+        run: ls "../${{ github.workspace }}"
 
       # - name: Build GDAL
       #   uses: threeal/cmake-action@v2.1.0
