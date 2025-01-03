@@ -24,7 +24,7 @@ jobs:
           path: gdal-src
 
       - name: List files
-        run: ls
+        run: cd gdal-src && ls
 
       - name: Git status
         run: git status
