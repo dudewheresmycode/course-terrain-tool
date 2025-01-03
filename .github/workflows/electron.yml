@@ -27,11 +27,11 @@ jobs:
         run: pwd
 
       - name: List files
-        working-directory: gdal-src
+        working-directory: ${{ github.workspace }}
         run: pwd
 
       - name: List files
-        working-directory: gdal-src
+        working-directory: ${{ github.workspace }}
         run: ls
 
       # - name: Build GDAL
