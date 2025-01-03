@@ -11,56 +11,56 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
-      - name: Create source dir
-        run: mkdir -p gdal-build
-
-      - name: Check out GDAL
-        uses: actions/checkout@v1
-        with:
-          path: gdal-src
-          repository: OSGeo/gdal
-          ref: stable
-          fetch-depth: 1
-          fetch-tags: false
-
-      # - name: Set gdal path
-      # run: echo "GDAL_SRC=$(echo "$(cd "$(dirname "$1")"; pwd)/$(basename "$1")")" >> $env:GITHUB_ENV
-
-      # - name: GDAL Path
-      #   run: echo "${{ env.GDAL_SRC }}"
-
-      # - name: Workspace
-      #   run: echo "${{ github.workspace }}"
-
-      # - name: Current files
-      #   run: pwd
-
-      # - name: List files
-      #   run: ls "${{ github.workspace }}"
-
-      # - name: List files
-      #   working-directory: ${{ github.workspace }}
-      #   run: ls ../
       - name: Install PROJ
         run: |
           brew update
-          brew install proj
+          brew install proj gdal
 
-      - name: Build GDAL
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          build-dir: gdal-build
-          source-dir: ../gdal-src
-          args: --target install
-          options: |
-            GDAL_BUILD_OPTIONAL_DRIVERS=OFF
-            OGR_BUILD_OPTIONAL_DRIVERS=OFF
-            CMAKE_DISABLE_FIND_PACKAGE_Arrow=ON
-            GDAL_USE_LIBKML=OFF
+      # - name: Create source dir
+      #   run: mkdir -p gdal-build
 
-      # - name: install GDAL
-      #   run: make install
-      # run: echo "$PATH:$PATH:/" >> $env:PATH
+      # - name: Check out GDAL
+      #   uses: actions/checkout@v1
+      #   with:
+      #     path: gdal-src
+      #     repository: OSGeo/gdal
+      #     ref: stable
+      #     fetch-depth: 1
+      #     fetch-tags: false
+
+      # # - name: Set gdal path
+      # # run: echo "GDAL_SRC=$(echo "$(cd "$(dirname "$1")"; pwd)/$(basename "$1")")" >> $env:GITHUB_ENV
+
+      # # - name: GDAL Path
+      # #   run: echo "${{ env.GDAL_SRC }}"
+
+      # # - name: Workspace
+      # #   run: echo "${{ github.workspace }}"
+
+      # # - name: Current files
+      # #   run: pwd
+
+      # # - name: List files
+      # #   run: ls "${{ github.workspace }}"
+
+      # # - name: List files
+      # #   working-directory: ${{ github.workspace }}
+      # #   run: ls ../
+
+      # - name: Build GDAL
+      #   uses: threeal/cmake-action@v2.1.0
+      #   with:
+      #     build-dir: gdal-build
+      #     source-dir: ../gdal-src
+      #     options: |
+      #       GDAL_BUILD_OPTIONAL_DRIVERS=OFF
+      #       OGR_BUILD_OPTIONAL_DRIVERS=OFF
+      #       CMAKE_DISABLE_FIND_PACKAGE_Arrow=ON
+      #       GDAL_USE_LIBKML=OFF
+
+      # # - name: install GDAL
+      # #   run: make install
+      # # run: echo "$PATH:$PATH:/" >> $env:PATH
 
       - name: Check out PDAL
         uses: actions/checkout@v1
