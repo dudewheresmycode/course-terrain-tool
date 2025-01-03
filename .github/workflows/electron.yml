@@ -24,7 +24,7 @@ jobs:
           path: gdal-src
 
       - name: Create source dir
-        run: ls gdal-src -l
+        run: ls gdal-src
 
       - name: Build GDAL
         uses: threeal/cmake-action@v2.1.0
