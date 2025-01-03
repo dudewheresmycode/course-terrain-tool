@@ -24,13 +24,13 @@ jobs:
           path: gdal-src
 
       - name: Create source dir
-        run: ls -l
+        run: ls gdal-src -l
 
       - name: Build GDAL
         uses: threeal/cmake-action@v2.1.0
         with:
           build-dir: gdal-build
-          source-dir: gdal-src
+          source-dir: gdal-src/gdal
 
       - name: "Upload artifact"
         if: ${{ matrix.os == 'macos-13' }}
