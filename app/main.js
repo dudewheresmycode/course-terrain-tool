@@ -5,7 +5,7 @@ import express from 'express';
 
 import './utils/startup.js';
 import { app as server } from './server/index.js';
-import { verifyDependencies } from './conda/installer.js';
+import { verifyDependencies, installDependencies } from './conda/installer.js';
 
 const PORT = process.env.PORT || 3133;
 
@@ -14,6 +14,7 @@ function createWindow () {
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 700,
+    backgroundColor: '#222222',
     webPreferences: {
       preload: path.resolve(app.getAppPath(), './app/preload.js'),
       // nodeIntegrationInWorker: true,
@@ -32,16 +33,14 @@ function createWindow () {
   }
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  
-  await verifyDependencies();
-  
+    
   await startServer();
 
   createWindow();
@@ -51,12 +50,21 @@ app.whenReady().then(async () => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
-
-  ipcMain.handle('linkout', (event, location) => {
+  
+  ipcMain.on('install-tools', async (event) => {
+    event.sender.send('install-progress', { foo: 0 });
+    await installDependencies();
+  });
+  ipcMain.handle('dependency-check', async (event) => {
+    return verifyDependencies();
+  });
+  ipcMain.handle('link-out', (event, location) => {
     console.log(location);
     shell.openExternal(location);
   });
-
+  ipcMain.handle('quit-app', (event) => {
+    app.quit();
+  });
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -71,20 +79,12 @@ app.on('window-all-closed', function () {
 
 function startServer() {
   return new Promise(resolve => {
-    
-    // server.get('/preload.js', (req, res) => res.sendFile(path.join(process.cwd(), './preload.js')));
     const distPath = path.resolve(app.getAppPath(), './client/dist');
-    console.log('distPath', distPath);
     server.use(express.static(distPath));
     server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
 
     server.listen(PORT, () => {
-      // we set CTC_DEBUG when we run the app in develop mode and 
-      // proxy the server behind the webpack dev server
-      // so we hide this log message to avoid confusion about which address the user sees
-      if (!process.env.CTC_DEBUG) {
-        console.log(`Server running at http://localhost:${PORT}`);
-      }
+      console.log(`Server running at http://localhost:${PORT}`);
       resolve();
     });
   });

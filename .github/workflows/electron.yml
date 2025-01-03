@@ -1,65 +1,94 @@
 name: build/electron
 run-name: Building and releasing electron app 🚀
-on: [push, pull_request]
+on: push
 
 jobs:
-  release:
-    if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
+  dependencies:
     runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
         os: [macos-13, macos-latest, windows-latest]
     env:
-      DEBUG: electron-builder
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
-      - name: Set vars on windows
-        if: ${{ startsWith(matrix.os, 'win') }}
-        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
-
-      - name: Set vars on macos
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
-
-      - name: Check out Git repository
+      - name: Check out GDAL
+        working-directory: gdal-source
         uses: actions/checkout@v1
+          with:
+            repository: 'https://github.com/OSGeo/gdal.git'        
 
-      - name: Install Node.js, NPM and Yarn
-        uses: actions/setup-node@v1
-        with:
-          node-version: 20
+      - name: Build GDAL
+        uses: threeal/cmake-action@v2.1.0
+          with:
+            build-dir: gdal-build
+            source-dir: gdal-source
 
-      - name: "npm install"
-        run: npm install
-      - name: "npm build"
-        run: npm run build
-      - name: "electron-builder"
-        run: npx electron-builder --publish never
-
-      - name: "Upload mac artifact"
-        if: ${{ matrix.os == 'macos-latest' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: CTT_MacOS_arm64_${{ env.SHORT_SHA }}
-          path: |
-            dist/*.dmg
-            dist/*.dmg.blockmap
-            dist/*.yml
-
-      - name: "Upload mac artifact"
+      - name: "Upload artifact"
         if: ${{ matrix.os == 'macos-13' }}
         uses: actions/upload-artifact@v4
         with:
-          name: CTT_MacOS_amd64_${{ env.SHORT_SHA }}
-          path: |
-            dist/*.dmg
-            dist/*.dmg.blockmap
-            dist/*.yml
+          name: gdal_${{ matrix.os }}
+          path: gdal-build
 
-      - name: "Upload windows artifact"
-        if: ${{ startsWith(matrix.os, 'win') }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: CTT_Windows_64_${{ env.SHORT_SHA }}
-          path: dist
+  # release:
+  #   if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
+  #   runs-on: ${{ matrix.os }}
+
+  #   strategy:
+  #     matrix:
+  #       os: [macos-13, macos-latest, windows-latest]
+  #   env:
+  #     DEBUG: electron-builder
+  #     GH_TOKEN: ${{ secrets.github_token }}
+  #   steps:
+  #     - name: Set vars on windows
+  #       if: ${{ startsWith(matrix.os, 'win') }}
+  #       run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
+
+  #     - name: Set vars on macos
+  #       if: ${{ startsWith(matrix.os, 'macos') }}
+  #       run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
+
+  #     - name: Check out repository
+  #       uses: actions/checkout@v1
+
+  #     - name: Install Node.js, NPM and Yarn
+  #       uses: actions/setup-node@v1
+  #       with:
+  #         node-version: 20
+
+  #     - name: "npm install"
+  #       run: npm install
+
+  #     - name: "npm build"
+  #       run: npm run build
+
+  #     - name: "electron-builder"
+  #       run: npx electron-builder --publish never
+
+  #     - name: "Upload mac artifact"
+  #       if: ${{ matrix.os == 'macos-latest' }}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: CTT_MacOS_arm64_${{ env.SHORT_SHA }}
+  #         path: |
+  #           dist/*.dmg
+  #           dist/*.dmg.blockmap
+  #           dist/*.yml
+
+  #     - name: "Upload mac artifact"
+  #       if: ${{ matrix.os == 'macos-13' }}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: CTT_MacOS_amd64_${{ env.SHORT_SHA }}
+  #         path: |
+  #           dist/*.dmg
+  #           dist/*.dmg.blockmap
+  #           dist/*.yml
+
+  #     - name: "Upload windows artifact"
+  #       if: ${{ startsWith(matrix.os, 'win') }}
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: CTT_Windows_64_${{ env.SHORT_SHA }}
+  #         path: dist

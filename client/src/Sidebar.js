@@ -206,7 +206,6 @@ export default function Sidebar(props) {
             </FormControl>
             <FormControl fullWidth={true} variant="outlined">
               <Button
-                labelId="data-button"
                 fullWidth={true}
                 color={props.dataSource ? '' : 'primary'}
                 startIcon={props.dataSource ? null : (<SearchIcon />)}
