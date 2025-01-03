@@ -122,7 +122,7 @@ export async function installDependencies(sender) {
       sender.send("install-progress", {
         text: "Installing miniconda package manager",
       });
-      await installCondaWindows(installDir);
+      await installCondaWindows(tools.conda, installDir);
     }
 
     sender.send("install-progress", {
