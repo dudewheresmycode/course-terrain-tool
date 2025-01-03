@@ -17,7 +17,7 @@ jobs:
       - name: Check out GDAL
         uses: actions/checkout@v1
         with:
-          path: gdal-src
+          path: ${{ github.workspace }}/gdal-src
           repository: OSGeo/gdal
           ref: stable
           fetch-depth: 1
