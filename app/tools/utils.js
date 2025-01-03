@@ -28,9 +28,9 @@ export function getMiniCondaScriptPath() {
   );
 }
 
-export function runCommand(bin, options, shell) {
+export function runCommand(bin, args, options) {
   return new Promise((resolve, reject) => {
-    const child = spawn(bin, options, shell ? { shell } : undefined);
+    const child = spawn(bin, args, options);
     child.stderr.on('data', (data) =>
       console.log(`[${path.basename(bin)}]: ${data}`)
     );

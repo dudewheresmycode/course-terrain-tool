@@ -121,7 +121,8 @@ export async function installMiniforge() {
         '/RegisterPython=0',
         '/S',
         `/D=${mfInstallDir}`
-      ]
+      ],
+      { shell: true }
     );
   }
 

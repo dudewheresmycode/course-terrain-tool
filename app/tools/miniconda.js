@@ -90,7 +90,7 @@ export async function installCondaWindows() {
       `@("/S", "/D=${condaInstallDir}")`,
       '-Wait',
     ],
-    'powershell.exe'
+    { shell: 'powershell.exe' }
   );
 
   // clean up
