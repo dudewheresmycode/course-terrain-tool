@@ -126,6 +126,8 @@ export async function installMiniforge() {
     );
   }
 
+  await fs.promises.unlink(localInstallerPath);
+
   const scriptPath = getCondaScriptPath();
   if (fs.existsSync(scriptPath)) {
     return scriptPath;
@@ -148,4 +150,11 @@ export async function installToolsWithConda(condaBin, installList) {
     'conda-forge',
     ...installList,
   ]);
+
+  console.log('Cleaning up unused conda files...');
+  await condaClean(condaBin)
+}
+
+export function condaClean(condaBin) {
+  return runCommand(condaBin, ['clean', '-all', '=y']);
 }
