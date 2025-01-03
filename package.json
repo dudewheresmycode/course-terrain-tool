@@ -2,10 +2,7 @@
   "name": "course-terrain-tool",
   "version": "1.0.0",
   "description": "Course Terrain Tool",
-  "author": {
-    "name": "dudewheresmycode",
-    "url": "https://github.com/dudewheresmycode"
-  },
+  "author": "",
   "workspaces": [
     "client"
   ],
@@ -21,7 +18,11 @@
     "win": {
       "icon": "./resources/icon.ico"
     },
-    "files": ["!**/_tmp", "!**/docs", "!**/data"]
+    "files": [
+      "!**/_tmp",
+      "!**/docs",
+      "!**/data"
+    ]
   },
   "scripts": {
     "start": "electron .",
@@ -37,12 +38,14 @@
     "_app_deps": "electron-builder install-app-deps"
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
     "concurrently": "^9.1.2",
     "electron": "^33.2.1",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0"
   },
   "dependencies": {
     "axios": "^1.7.9",
