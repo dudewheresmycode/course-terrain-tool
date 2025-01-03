@@ -30,6 +30,10 @@ jobs:
         working-directory: gdal-src
         run: pwd
 
+      - name: List files
+        working-directory: gdal-src
+        run: ls
+
       # - name: Build GDAL
       #   uses: threeal/cmake-action@v2.1.0
       #   with:
