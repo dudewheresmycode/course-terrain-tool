@@ -1,6 +1,6 @@
 ## Course Terrain Tool (beta)
 
-<img src="./docs/screenshot.png" width="400" />
+<img src="./docs/images/screenshot.png" width="400" />
 
 The **Course Terrain Tool** is a desktop application designed to automate lidar/terrain sourcing and creation for building [OPCD](https://zerosandonesgcd.com/opcd-course-creation/) courses.
 
@@ -28,6 +28,13 @@ The **Course Terrain Tool** is a desktop application designed to automate lidar/
 We're continually working on adding new sources to this list. If you have a specific source you would like to see added, you can request it by opening an [issue](https://github.com/dudewheresmycode/course-terrain-tool/issues/new?title=Data%20Source%20Request:%20&labels=data-request).
 
 ### Getting Started
+
+1. Download the latest version of the app from our [releases](/releases) page.
+2. Launch the app
+3. You may be prompted to install some required tools (PDAL, GDAL)
+
+
+
 
 1. **Clone or download project**
 

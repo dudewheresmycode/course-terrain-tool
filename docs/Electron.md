@@ -40,5 +40,5 @@ Source: https://gist.github.com/ansarizafar/6fa64f44aa933794c4d6638eec32b9aa
 For debugging purposes, we can extract the core app files from the bundled ASAR file.
 
 ```bash
-npx @electron/asar extract app.asar ./asar
+npx @electron/asar extract app.asar ./_tmp/asar
 ```
