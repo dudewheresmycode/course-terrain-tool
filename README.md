@@ -30,13 +30,11 @@ We're continually working on adding new sources to this list. If you have a spec
 1. Download the latest version of the app from our [releases](/releases) page.
 2. Launch the app
 3. You may be prompted to install some required tools (PDAL, GDAL) using our setup wizard. [Learn more](https://ctt.opengolfsim.com/Dependencies) about the dependencies.
-      > [!WARNING]
-      > This step requires about 5GB of free disk space. See note below.
 4. Set inner course area (in kilometers)
 5. Optionally set the outer course area (in kilometers)
 6. Search for LiDAR data from a variety of sources
 7. Set your raster resolution (in meters)
 8. Click to export all files to a new course folder
 
-
-> Note: We're working on trying to compile custom, smaller versions of PDAL and GDAL directly in the app. But until then, you'll either need to [manually install PDAL and GDAL](https://ctt.opengolfsim.com/Dependencies#manually-install-tools) yourself, or use the wizard within the app to install them using `mini-forge`, which requires ~5GB of space.
+> [!WARNING]
+> Note: Installing the required tools in-app using `conda-forge` requires about 5GB of free disk space. We're working on trying to compile custom, smaller versions of PDAL and GDAL directly and bundle them in the app or installer. But until then, you'll can either [manually install PDAL and GDAL](https://ctt.opengolfsim.com/Dependencies#manually-install-tools) yourself, or use the wizard within the app to install them.
