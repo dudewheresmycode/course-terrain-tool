@@ -16,7 +16,7 @@ export const tools = {
 
 export async function verifyDependencies() {
 
-  tools.conda = await findBinaryPath('conda');
+  // tools.conda = await findBinaryPath('conda');
   tools.homebrew = await checkBrewSupport();
 
   // const pdal = await findBinaryPath('pdal');
