@@ -3,6 +3,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import express from 'express';
 import log from 'electron-log';
+import { autoUpdater } from 'electron-updater';
 
 import './utils/startup.js';
 import { app as server } from './server/index.js';
@@ -13,6 +14,8 @@ const PORT = process.env.PORT || 3133;
 
 // initializes the logger for any renderer process
 log.initialize();
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
 
 function createWindow() {
   // Create the browser window.
@@ -43,6 +46,9 @@ function createWindow() {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
   log.info('App starting up...');
+  // TODO: Customize experience?
+  // https://github.com/iffy/electron-updater-example/blob/master/main.js
+  autoUpdater.checkForUpdatesAndNotify();
 
   await startServer();
 
