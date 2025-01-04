@@ -4,7 +4,7 @@ on: push
 
 jobs:
   release:
-    # if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
+    if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -14,10 +14,6 @@ jobs:
       DEBUG: electron-builder
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
-      # - name: Set vars on macos
-      #   if: ${{ startsWith(matrix.os, 'macos') }}
-      #   run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
-
       - name: Check out repository
         uses: actions/checkout@v1
 
@@ -25,35 +21,15 @@ jobs:
         if: ${{ startsWith(matrix.os, 'win') }}
         run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
       
-      - name: Echo long hash
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: echo "${{ github.sha }}"
-
-      - name: Echo short hash
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: echo "SHORT_SHA=${{ github.sha }}" | cut -c 1-18
-
       - name: Set short hash (mac/linux)
         if: ${{ startsWith(matrix.os, 'macos') }}
         id: vars
         run: echo "sha_short=${{ github.sha }}" | cut -c 1-18 >> $GITHUB_OUTPUT
 
-      # - name: Set short hash (mac/linux)
-      #   if: ${{ startsWith(matrix.os, 'macos') }}
-      #   run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
-
-
-      - name: Check outputs
-        run: echo ${{ env.SHORT_SHA }}
-
       - name: Install Node.js, NPM and Yarn
         uses: actions/setup-node@v1
         with:
           node-version: 20
-      
-      # - name: Set short hash (mac)
-      #   if: ${{ startsWith(matrix.os, 'macos') }}
-      #   run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $env:GITHUB_ENV
 
       - name: "npm install"
         run: npm install
