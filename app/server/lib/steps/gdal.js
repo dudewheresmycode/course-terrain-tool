@@ -1,3 +1,4 @@
+import { app } from 'electron';
 import path from 'path';
 import { promisify } from 'util';
 import { spawn, exec } from 'child_process';
@@ -8,7 +9,7 @@ import { tools } from '../../../tools/index.js';
 
 const execAsync = promisify(exec);
 
-const wmsDirectory = path.resolve(process.cwd(), './app/server/wms');
+const wmsDirectory = path.resolve(app.getAppPath() || process.cwd(), 'wms');
 
 function runCommand(binName, args, onProgress) {
   let progess = 0;
