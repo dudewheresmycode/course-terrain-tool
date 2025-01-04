@@ -43,8 +43,8 @@ export const MapStyleURIs = [
 
 function addKilometers(lngLat, kilometers) {
   const r_earth = 6378;
-  const new_longitude = lngLat.lng + (kilometers / r_earth) * (180 / Math.PI) / Math.cos(lngLat.lat * Math.PI/180);
-  const new_latitude  = lngLat.lat  + (kilometers / r_earth) * (180 / Math.PI);
+  const new_longitude = lngLat.lng + (kilometers / r_earth) * (180 / Math.PI) / Math.cos(lngLat.lat * Math.PI / 180);
+  const new_latitude = lngLat.lat + (kilometers / r_earth) * (180 / Math.PI);
   const b = new mapboxgl.LngLat(new_longitude, new_latitude);
   return b;
 }
@@ -71,8 +71,8 @@ export default function Map(props) {
     if (!centerPosition) {
       return [];
     }
-    const nw = addKilometers(centerPosition, -(props.distance/2));
-    const se = addKilometers(centerPosition, props.distance/2);
+    const nw = addKilometers(centerPosition, -(props.distance / 2));
+    const se = addKilometers(centerPosition, props.distance / 2);
     return lngLatToPolygon(nw, se);
   }, [props.distance, centerPosition]);
 
@@ -81,8 +81,8 @@ export default function Map(props) {
       return [];
     }
     const extendDistance = props.distance + props.outerDistance;
-    const nw = addKilometers(centerPosition, -(extendDistance/2));
-    const se = addKilometers(centerPosition, extendDistance/2);
+    const nw = addKilometers(centerPosition, -(extendDistance / 2));
+    const se = addKilometers(centerPosition, extendDistance / 2);
     return lngLatToPolygon(nw, se);
   }, [props.distance, props.outerDistance, centerPosition]);
 
@@ -98,11 +98,11 @@ export default function Map(props) {
       return;
     }
     source.setData({
-        'type': 'Feature',
-        'geometry': {
-          'type': 'Polygon',
-          'coordinates': [coords]
-        }
+      'type': 'Feature',
+      'geometry': {
+        'type': 'Polygon',
+        'coordinates': [coords]
+      }
     });
   }, []);
 
@@ -120,7 +120,7 @@ export default function Map(props) {
     const latLng = event.target.getLngLat();
     setCenterPosition(latLng);
   }, []);
-  
+
   const handleMapClick = useCallback((event) => {
     console.log(event);
     if (!event.originalEvent.shiftKey) {
@@ -130,28 +130,21 @@ export default function Map(props) {
     markerInstance.current.setLngLat(event.lngLat);
     markerInstance.current.addTo(mapInstance.current);
     setCenterPosition(event.lngLat);
-    
+
     // zoom in and center if we're clicking from far away
     const zoom = mapInstance.current.getZoom();
     console.log('zoom', zoom);
     // if (mapInstance.current.getZoom() < 7) {
-      // mapInstance.current.setCenter(event.lngLat);
-      mapInstance.current.panTo(event.lngLat, { duration: 1000 });
-      // mapInstance.current.zoomTo(12, {
-      //   duration: 1000
-      //   // offset: [100, 50]
-      // });
+    // mapInstance.current.setCenter(event.lngLat);
+    mapInstance.current.panTo(event.lngLat, { duration: 1000 });
+    // mapInstance.current.zoomTo(12, {
+    //   duration: 1000
+    //   // offset: [100, 50]
+    // });
     // }
     // mapInstance.current.setZoom(10);
   }, []);
 
-  useEffect(() => {
-    if (!draw) {
-      return;
-    }
-    console.log('set mode', props.mapEditMode);
-    draw.changeMode(props.mapEditMode ? 'draw_rectangle' : 'simple_select');
-  }, [draw, props.mapEditMode]);
 
   // useEffect(() => {
   //   console.log('mapStyle', props.mapStyle);
@@ -188,7 +181,7 @@ export default function Map(props) {
         mapInstance.current.removeLayer(`${layer.id}o`);
       }
     });
-    
+
     Object.keys(style.sources).forEach(sourceId => {
       if (sourceId.startsWith(DT_SOURCE_PREFIX)) {
         mapInstance.current.removeSource(sourceId);
@@ -254,7 +247,7 @@ export default function Map(props) {
             'line-opacity': 0.2
           }
         });
-  
+
         BASE_LAYERS.forEach(baseLayerId => {
           mapInstance.current.moveLayer(baseLayerId, layerId);
           mapInstance.current.moveLayer(baseLayerId, `${layerId}o`);
@@ -264,7 +257,7 @@ export default function Map(props) {
       console.log('shift', mapInstance.current.getStyle().layers);
 
     }
-    
+
   }, [props.dataSource]);
 
   const addLayers = useCallback(() => {
@@ -276,7 +269,7 @@ export default function Map(props) {
       }
     });
     [INNER_ID, OUTER_ID].forEach(id => {
-      if(style.sources[id]) {
+      if (style.sources[id]) {
         mapInstance.current.removeSource(id);
       }
     });
@@ -294,7 +287,7 @@ export default function Map(props) {
         }
       }
     });
-    
+
 
 
     mapInstance.current.addSource(OUTER_ID, {
@@ -313,8 +306,8 @@ export default function Map(props) {
       'source': OUTER_ID, // reference the data source
       'layout': {},
       'paint': {
-          'fill-color': OUTER_COLOR, // blue color fill
-          'fill-opacity': 0.1
+        'fill-color': OUTER_COLOR, // blue color fill
+        'fill-opacity': 0.1
       }
     });
     // Add a black outline around the polygon.
@@ -324,11 +317,11 @@ export default function Map(props) {
       'source': OUTER_ID,
       'layout': {},
       'paint': {
-          'line-color': OUTER_COLOR,
-          'line-width': 1
+        'line-color': OUTER_COLOR,
+        'line-width': 1
       }
     });
-    
+
     // add inner layers at the end, so they are on top
     mapInstance.current.addLayer({
       'id': INNER_ID_FILL,
@@ -347,8 +340,18 @@ export default function Map(props) {
       'layout': {},
       'paint': { 'line-color': INNER_COLOR, 'line-width': 1 }
     });
-    
+
   }, [innerCoordinates, centerPosition]);
+
+  const handleMapStyleChange = (_event, style) => {
+    console.log('style', style);
+    if (!mapInstance.current) { return; }
+    // const mapStyle = Object.values(MapStyleURIs)[props.mapStyle];
+    const mapStyleUri = `mapbox://styles/mapbox/${style}`;
+    console.log('style change', mapStyleUri);
+    mapInstance.current.setStyle(mapStyleUri);
+    mapInstance.current.on('style.load', addLayers);
+  }
 
   useEffect(() => {
     if (!mapInstance.current) { return; }
@@ -360,15 +363,15 @@ export default function Map(props) {
     }
   }, [innerCoordinates, outerCoordinates, centerPosition]);
 
-  useEffect(() => {
-    if (!mapInstance.current) { return; }
-    const mapStyle = Object.values(MapStyleURIs)[props.mapStyle];
-    if (mapStyle) {
-      console.log('style change', mapStyle);
-      mapInstance.current.setStyle(mapStyle.uri);
-      mapInstance.current.on('style.load', addLayers);
-    }
-  }, [props.mapStyle]);
+  // useEffect(() => {
+  //   if (!mapInstance.current) { return; }
+  //   const mapStyle = Object.values(MapStyleURIs)[props.mapStyle];
+  //   if (mapStyle) {
+  //     console.log('style change', mapStyle);
+  //     mapInstance.current.setStyle(mapStyle.uri);
+  //     mapInstance.current.on('style.load', addLayers);
+  //   }
+  // }, [props.mapStyle]);
 
   useEffect(() => {
     console.log('dataSource changed!', props.dataSource);
@@ -385,11 +388,13 @@ export default function Map(props) {
 
   useEffect(() => {
     (async () => {
+      const style = await window.courseterrain.selectedMapStyle();
+
       const { token } = await fetch(`${MB_TOKEN_ENDPOINT}?token=${btoa('mbt')}`).then(res => res.json());
       mapboxgl.accessToken = token;
 
       mapInstance.current = new mapboxgl.Map({
-        style: MapStyleURIs[0].uri,
+        style: style ? `mapbox://styles/mapbox/${style}` : MapStyleURIs[0].uri,
         boxZoom: false,
         container: mapElement.current, // container ID
         center: MAP_START_POINT, // starting position [lng, lat]. Note that lat must be set between -90 and 90
@@ -402,16 +407,16 @@ export default function Map(props) {
       }));
       mapInstance.current.addControl(new mapboxgl.NavigationControl());
       mapInstance.current.on('load', addLayers);
-  
+
       if (!markerInstance.current) {
         markerInstance.current = new mapboxgl.Marker({
           draggable: true
         });
       }
-      
+
       // mapInstance.current.on('contextmenu', handleMapClick);
       mapInstance.current.on('click', handleMapClick);
-  
+
       // const currentPosition = markerInstance.current.getLngLat();
       // console.log('props.distance', props.distance);
       // console.log('currentPosition', currentPosition);
@@ -420,12 +425,13 @@ export default function Map(props) {
       // }
     })();
 
-
+    window.courseterrain.addEventListener('map-layer-change', handleMapStyleChange);
     return () => {
       console.log('clean up');
       // mapInstance.current.off('load', updateSource);
       // mapInstance.current.off('contextmenu', handleMapClick);
       mapInstance.current.remove();
+      window.courseterrain.removeEventListener('map-layer-change', handleMapStyleChange);
     }
   }, []);
   return (<MapElement ref={mapElement} id="map"></MapElement>);

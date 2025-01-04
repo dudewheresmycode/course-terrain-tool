@@ -9,6 +9,7 @@ import './utils/startup.js';
 import { app as server } from './server/index.js';
 import { verifyDependencies } from './tools/index.js';
 import { installDependencies } from './tools/installer.js';
+import { buildMenu } from './menu.js';
 
 const PORT = process.env.PORT || 3133;
 
@@ -33,6 +34,7 @@ function createWindow() {
       // nodeIntegration: true,
     }
   });
+  buildMenu(mainWindow.webContents);
 
   const isDevServer = process.argv.includes('devserver');
   const port = isDevServer ? 3030 : 3133;
@@ -49,9 +51,12 @@ function createWindow() {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
   log.info('App starting up...');
+
+
   // TODO: Customize experience?
   // https://github.com/iffy/electron-updater-example/blob/master/main.js
   autoUpdater.checkForUpdatesAndNotify();
+
 
   await startServer();
 
@@ -63,6 +68,10 @@ app.whenReady().then(async () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 
+  // ipcMain.on('register-map', (event) => {
+  //   // event.sender
+  //   connectMap(event.sender);
+  // });
   ipcMain.on('install-tools', async (event) => {
     event.sender.send('install-progress', { text: 'Setting up installation' });
     await installDependencies(event.sender);

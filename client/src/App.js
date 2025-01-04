@@ -100,7 +100,7 @@ export default function App() {
         </Box>
       ) : (
         <Box sx={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-          <AppBar position="relative" sx={{ flexGrow: 0, p: 1, display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
+          {/* <AppBar position="relative" sx={{ flexGrow: 0, p: 1, display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
             <Box sx={{ flex: 1, ml: 1 }}>
               <Typography>Course Terrain Tool</Typography>
             </Box>
@@ -111,7 +111,7 @@ export default function App() {
                 onMapChange={handleMapChange}
               />
             </Box>
-          </AppBar>
+          </AppBar> */}
           <Box sx={{ display: 'flex', flexGrow: 1, gap: 3 }}>
             <Box sx={{ width: 300 }}>
               <Sidebar
