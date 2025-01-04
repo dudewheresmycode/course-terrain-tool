@@ -15,6 +15,8 @@ app.use(express.json());
 app.ws('/progress', (ws, req) => {
   ws.on('message', (msg) => {
     const message = JSON.parse(msg);
+
+    // creates a new job
     if (message.event === 'submit') {
       const job = jobQueue.add(message.data);
       job.on('update', jobState => {

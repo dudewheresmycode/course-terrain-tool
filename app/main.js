@@ -1,11 +1,12 @@
 // Modules to control application life and create native browser window
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import express from 'express';
 
 import './utils/startup.js';
 import { app as server } from './server/index.js';
-import { verifyDependencies, installDependencies } from './tools/installer.js';
+import { verifyDependencies } from './tools/index.js';
+import { installDependencies } from './tools/installer.js';
 
 const PORT = process.env.PORT || 3133;
 
@@ -64,6 +65,17 @@ app.whenReady().then(async () => {
   ipcMain.handle('link-out', (event, location) => {
     console.log(location);
     shell.openExternal(location);
+  });
+  ipcMain.handle('select-folder', async () => {
+    const folder = await dialog.showSaveDialog({
+      title: 'Create Course Folder',
+      nameFieldLabel: 'Course Name',
+      // defaultPath: app.getPath('home'),
+      message: 'Select the location to create your course folder',
+      buttonLabel: 'Create Course Folder',
+      // properties: ['openDirectory', 'createDirectory', 'promptToCreate']
+    });
+    return folder;
   });
   ipcMain.handle('quit-app', (event) => {
     app.quit();

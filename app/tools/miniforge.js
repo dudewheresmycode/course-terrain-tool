@@ -48,7 +48,7 @@ export async function verifyCondaPackage(condaBin, packageName) {
   }
   const packageInList = cachedPackages.some((pkg) => pkg.name === packageName);
   if (packageInList) {
-    return { type: 'conda', key: packageName };
+    return packageName;
   }
 }
 

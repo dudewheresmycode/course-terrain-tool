@@ -73,9 +73,9 @@ export default function App() {
   useEffect(() => {
     window.courseterrain.verifyDependencies().then((report) => {
       console.log('passed', report);
-      // if (!report.passed) {
-      //   setInstallerDialogOpen(true);
-      // }
+      if (!report.passed) {
+        setInstallerDialogOpen(true);
+      }
       setHasRequiredDependencies(report.passed);
       setIsDependencyCheckPending(false);
     }).catch(error => {

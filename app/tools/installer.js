@@ -1,22 +1,9 @@
-import fs from 'node:fs';
-
 import { GDAL_BINARIES } from '../constants.js';
 import mkdirSafe from '../utils/mkdirSafe.js';
-import {
-  getInstallDirectory,
-  findBinaryPath,
-} from './utils.js';
-import { checkBrewSupport, installToolsWithBrew } from './homebrew.js';
-import { installMiniforge, getCondaScriptPath, installToolsWithConda, verifyCondaPackage } from './miniforge.js';
+import { getInstallDirectory, findBinaryPath } from './utils.js';
+import { installMiniforge, installToolsWithConda } from './miniforge.js';
+import { tools, verifyDependencies } from './index.js';
 
-const tools = {
-  platform: process.platform,
-  arch: process.arch,
-  homebrew: undefined,
-  conda: undefined,
-  pdal: undefined,
-  gdal: undefined,
-};
 
 async function checkRequiredGDALBinaries() {
   const gdal = {};
@@ -30,36 +17,6 @@ async function checkRequiredGDALBinaries() {
   return gdal;
 }
 
-export async function verifyDependencies() {
-  tools.conda = await findBinaryPath('conda');
-  tools.homebrew = await checkBrewSupport();
-
-  const pdal = await findBinaryPath('pdal');
-  if (pdal) {
-    tools.pdal = pdal;
-  }
-  const gdal = await checkRequiredGDALBinaries();
-  if (gdal) {
-    tools.gdal = gdal;
-  }
-
-  if (!tools.conda) {
-    // check if we've already installed conda to our isolated env
-    const condaBin = getCondaScriptPath();
-    if (fs.existsSync(condaBin)) {
-      tools.conda = condaBin;
-    }
-  }
-  // check if we've already installed conda to our isolated env
-  if ((!tools.pdal || !tools.gdal) && tools.conda) {
-    // check conda for PDAL
-    tools.pdal = await verifyCondaPackage(tools.conda, 'pdal');
-    tools.gdal = await verifyCondaPackage(tools.conda, 'gdal');
-  }
-
-  tools.passed = tools.pdal && tools.gdal ? true : false;
-  return tools;
-}
 
 function handleError(sender, error) {
   sender.send('install-error', error);

@@ -1,4 +1,5 @@
-const { contextBridge, ipcRenderer } = require("electron");
+
+const { contextBridge, ipcRenderer } = require('electron');
 /**
  * The preload script runs before `index.html` is loaded
  * in the renderer. It has access to web APIs as well as
@@ -7,6 +8,8 @@ const { contextBridge, ipcRenderer } = require("electron");
  *
  * https://www.electronjs.org/docs/latest/tutorial/sandbox
  */
+
+// eslint-disable-next-line no-undef
 window.addEventListener('DOMContentLoaded', () => {
   console.log('hello from preload!');
 });
@@ -28,6 +31,9 @@ contextBridge.exposeInMainWorld('courseterrain', {
     console.log('linkout', location);
     // shell.openExternal(location);
     ipcRenderer.invoke('link-out', location);
+  },
+  selectFolder: () => {
+    return ipcRenderer.invoke('select-folder');
   },
   quitApp: () => {
     ipcRenderer.invoke('quit-app');

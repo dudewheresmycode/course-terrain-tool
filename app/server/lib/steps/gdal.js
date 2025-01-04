@@ -4,15 +4,29 @@ import { spawn, exec } from 'child_process';
 import pMap from 'p-map';
 
 import { GDAL_BINARIES } from '../../../constants.js';
+import { tools } from '../../../tools/index.js';
 
 const execAsync = promisify(exec);
 
 const wmsDirectory = path.resolve(process.cwd(), './app/server/wms');
 
-function runCommand(bin, options, onProgress) {
+function runCommand(binName, args, onProgress) {
   let progess = 0;
   return new Promise((resolve, reject) => {
-    const child = spawn(bin, options);
+    const [bin, ...extraArgs] = getGDALCommand(binName);
+    if (!bin) {
+      throw new Error('Unable to find tool location');
+    }
+    // let [bin] = cmd;
+    // if (cmd.length > 1) {
+    //   const [_bin, _args] = cmd;
+    //   args.unshift(..._args);
+    //   bin = _bin;
+    // }
+    const child = spawn(bin, [
+      ...extraArgs,
+      ...args
+    ]);
     child.stderr.on('data', (data) => {
       console.log(`stderr: ${data}`);
       if (typeof onProgress === 'function') {
@@ -49,12 +63,31 @@ function runCommand(bin, options, onProgress) {
  *  - gdalinfo
  */
 
+function getGDALCommand(binaryName) {
+  console.log('binaryName', binaryName, tools.gdal.bin[binaryName]);
+  console.log('tool', tools.gdal);
+  const gdalbin = tools.gdal.bin[binaryName];
+  if (!gdalbin) {
+    return;
+  }
+  return tools.gdal.type === 'conda' ? [
+    tools.conda,
+    'run',
+    '-p', tools.condaEnv,
+    gdalbin
+  ] : [gdalbin];
+}
 /**
  * Get min/max and unit values from the GeoTIFF
  */
 export async function getGeoTiffStats(geoTiffPath) {
   try {
-    const res = await execAsync(`${GDAL_BINARIES.gdalinfo} -mm -json "${geoTiffPath}"`);
+    const cmd = getGDALCommand(GDAL_BINARIES.gdalinfo);
+    if (!cmd) {
+      throw new Error('Unable to locate tool');
+    }
+    // const binary = tools.gdal.type === 'conda' ? `${tools.conda} ${tools.gdal.gdalinfo}` : tools.gdal.gdalinfo;
+    const res = await execAsync(`${cmd.join(' ')} -mm -json "${geoTiffPath}"`);
     const data = JSON.parse(res.stdout);
     console.log(data);
     const [band] = data.bands;
@@ -135,7 +168,7 @@ export function cropGeoTIFFToCoordinates(coordinates) {
  */
 export async function geoTIFFHillShade(sourceFile, outputDirectory) {
   const destFile = path.join(outputDirectory, 'hillshade.tif');
-  await runCommand('gdaldem', [ 'hillshade', '-compute_edges', sourceFile, destFile ]);
+  await runCommand('gdaldem', ['hillshade', '-compute_edges', sourceFile, destFile]);
   return tifToJPG(destFile);
 }
 
@@ -165,7 +198,7 @@ export async function generateSatelliteForSource(source, outputDirectory, filena
 
   const wmsSource = path.join(wmsDirectory, `${source}.xml`);
   console.log('wmsSource', wmsSource);
-  
+
   const [xMin, yMin] = coordinates[0];
   const [xMax, yMax] = coordinates[2];
   const projwin = [xMin, xMax, yMin, yMax];

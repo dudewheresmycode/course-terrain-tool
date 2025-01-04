@@ -10,6 +10,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckIcon from '@mui/icons-material/Check';
+import InstallIcon from '@mui/icons-material/InstallDesktop';
 
 import LinkOut from './LinkOut';
 import { Box, Alert, LinearProgress, AlertTitle, Typography } from '@mui/material';
@@ -65,9 +66,15 @@ function InstallerContent(props) {
           Course Terrain Tool depends on a couple libraries to process the LiDAR and TIFF files.
           For your convenience we can install these for you using this setup wizard, or you can manually install these tools yourself.
           For more information checkout the <LinkOut href="https://github.com/dudewheresmycode/course-terrain-tool/blob/main/docs/Dependencies.md" target="_blank">Documentation</LinkOut>.
-
         </DialogContentText>
-        <List>
+        <DialogContentText sx={{ mt: 2, mb: 4 }}>
+          The following libraries are required:
+          <ul>
+            <li>PDAL 2.8</li>
+            <li>GDAL 3.10</li>
+          </ul>
+        </DialogContentText>
+        {/* <List>
           <ListItem>
             <ListItemText
               primary={
@@ -89,12 +96,10 @@ function InstallerContent(props) {
               secondary="The Point Data Abstraction Library (PDAL) is used for translating and processing point cloud data."
             />
           </ListItem>
-        </List>
-        <Alert sx={{mb: 1}} severity="info">A minimum of 500 MB of disk space is required to download and install the tools</Alert>
+        </List> */}
+        {/* <Alert sx={{ mb: 1 }} severity="info">A minimum of 500 MB of disk space is required to download and install the tools</Alert> */}
         <Alert severity="info">
-          To install the required tools this installer will run a silent install of the <LinkOut href="https://docs.anaconda.com/miniconda/">miniconda</LinkOut> package manager.
-
-          By using this setup wizard, you agree to accept Anaconda's Terms of Service (TOS) by default. Please make sure to review the full TOS <LinkOut href="https://legal.anaconda.com/policies/en/">here</LinkOut> before proceeding with silent installations.
+          To automatically install the required tools this installer will first run a silent install of the <LinkOut href="https://conda-forge.org/docs/">conda-forge</LinkOut> package manager.
         </Alert>
       </DialogContent>
       <DialogActions>
@@ -117,7 +122,7 @@ export default function InstallerDialog(props) {
   const [error, setError] = useState();
   const [finished, setFinished] = useState(false);
   const handleClose = (event, reason) => {
-    if (reason && reason === "backdropClick") 
+    if (reason && reason === "backdropClick")
       return;
     props.onClose();
   }
@@ -150,11 +155,11 @@ export default function InstallerDialog(props) {
       window.courseterrain.removeEventListener('install-error', handleError);
     }
   }, []);
-  
+
   return (
     <Dialog open={props.open} onClose={handleClose} disableEscapeKeyDown={true} fullWidth={true} maxWidth="md">
       <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-        <WarningIcon sx={{ mr: 1 }} /> Install Required Tools
+        <InstallIcon sx={{ mr: 1 }} /> Install Required Tools
       </DialogTitle>
       <InstallerContent
         progress={progress}
