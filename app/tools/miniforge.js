@@ -148,6 +148,14 @@ export async function installToolsWithConda(condaBin, installList) {
     ...installList,
   ]);
 
+  if (process.platform === 'win32') {
+    console.log('Running conda init...');
+    await runCommand(condaBin, [
+      'init',
+      '--json',
+      '--user'
+    ]);
+  }
   console.log('Cleaning up unused conda files...');
   await condaClean(condaBin)
 }
