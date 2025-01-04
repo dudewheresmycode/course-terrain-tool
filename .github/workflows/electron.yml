@@ -4,7 +4,7 @@ on: push
 
 jobs:
   release:
-    if: ${{ github.ref == 'refs/heads/main' || github.event.label.name == 'create-build' }}
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ${{ matrix.os }}
 
     strategy:
