@@ -16,7 +16,7 @@ export const tools = {
 
 export async function verifyDependencies() {
 
-  // tools.conda = await findBinaryPath('conda');
+
   tools.homebrew = await checkBrewSupport();
 
   // const pdal = await findBinaryPath('pdal');
@@ -33,6 +33,11 @@ export async function verifyDependencies() {
     const condaBin = getCondaScriptPath();
     if (fs.existsSync(condaBin)) {
       tools.conda = condaBin;
+    } else {
+      const condaExists = await findBinaryPath('conda');
+      if (condaExists) {
+        tools.conda = 'conda';
+      }
     }
   }
   // check if we've already installed conda to our isolated env
