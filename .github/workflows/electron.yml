@@ -27,15 +27,15 @@ jobs:
       
       - name: Echo long hash
         if: ${{ startsWith(matrix.os, 'macos') }}
-        echo "${{ github.sha }}"
+        run: echo "${{ github.sha }}"
 
       - name: Echo short hash
         if: ${{ startsWith(matrix.os, 'macos') }}
-        echo "${{ github.sha }}" | cut -c 1-8
+        run: echo "${{ github.sha }}" | cut -c 1-8
 
       - name: Set short hash (mac/linux)
         if: ${{ startsWith(matrix.os, 'macos') }}
-        echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
+        run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
 
 
       - name: Check outputs
