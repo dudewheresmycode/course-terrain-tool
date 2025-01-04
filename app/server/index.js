@@ -1,6 +1,6 @@
-import path from 'path';
 import express from 'express';
 import expressWs from 'express-ws';
+import log from 'electron-log';
 
 import usgsSearch from './lib/usgs.js';
 import { JobQueue } from './lib/jobs.js';
@@ -13,20 +13,22 @@ export const wsInstance = expressWs(app);
 app.use(express.json());
 
 app.ws('/progress', (ws, req) => {
+  log.debug('websocket opened');
   ws.on('message', (msg) => {
+    log.debug('new websocket message');
     const message = JSON.parse(msg);
 
-    // creates a new job
+    // create a new job
     if (message.event === 'submit') {
       const job = jobQueue.add(message.data);
       job.on('update', jobState => {
-        console.log('Job Progress', jobState.progress);
         ws.send(JSON.stringify({ event: 'job', job: jobState }));
       });
     }
   });
   ws.on('close', () => {
     // TODO: cancel active job?
+    log.debug('websocket closed');
   });
 });
 

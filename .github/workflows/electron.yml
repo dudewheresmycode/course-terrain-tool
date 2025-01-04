@@ -14,16 +14,17 @@ jobs:
       DEBUG: electron-builder
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
-      - name: Set vars on windows
-        if: ${{ startsWith(matrix.os, 'win') }}
-        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
-
-      - name: Set vars on macos
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
-
       - name: Check out repository
         uses: actions/checkout@v1
+
+      - name: Set short hash (win)
+        if: ${{ startsWith(matrix.os, 'win') }}
+        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
+      
+      - name: Set short hash (mac/linux)
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        id: vars
+        run: echo "sha_short=${{ github.sha }}" | cut -c 1-18 >> $GITHUB_OUTPUT
 
       - name: Install Node.js, NPM and Yarn
         uses: actions/setup-node@v1
@@ -43,7 +44,7 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         uses: actions/upload-artifact@v4
         with:
-          name: CTT_MacOS_arm64_${{ env.SHORT_SHA }}
+          name: CTT_MacOS_arm64_${{ steps.vars.outputs.sha_short }}
           path: |
             dist/*.dmg
             dist/*.dmg.blockmap
@@ -53,7 +54,7 @@ jobs:
         if: ${{ matrix.os == 'macos-13' }}
         uses: actions/upload-artifact@v4
         with:
-          name: CTT_MacOS_amd64_${{ env.SHORT_SHA }}
+          name: CTT_MacOS_amd64_${{ steps.vars.outputs.sha_short }}
           path: |
             dist/*.dmg
             dist/*.dmg.blockmap

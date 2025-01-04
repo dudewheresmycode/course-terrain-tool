@@ -1,21 +1,8 @@
-import { GDAL_BINARIES } from '../constants.js';
+import log from 'electron-log';
 import mkdirSafe from '../utils/mkdirSafe.js';
-import { getInstallDirectory, findBinaryPath } from './utils.js';
+import { getInstallDirectory } from './utils.js';
 import { installMiniforge, installToolsWithConda } from './miniforge.js';
 import { tools, verifyDependencies } from './index.js';
-
-
-async function checkRequiredGDALBinaries() {
-  const gdal = {};
-  for (const bin of Object.values(GDAL_BINARIES)) {
-    const installed = await findBinaryPath(bin);
-    if (!installed) {
-      return false;
-    }
-    gdal[bin] = installed;
-  }
-  return gdal;
-}
 
 
 function handleError(sender, error) {
@@ -67,7 +54,7 @@ export async function installDependencies(sender) {
       if (!tools.conda) {
         handleError(sender, 'Something went wrong during installation');
       }
-      console.log(`Installed: ${tools.conda}`);
+      log.info(`Installed: ${tools.conda}`);
       sender.send('install-progress', {
         text: 'Miniforge installation completed',
       });

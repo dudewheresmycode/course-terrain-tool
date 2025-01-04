@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import log from 'electron-log';
 
 import { GDAL_BINARIES } from '../constants.js';
 import { findBinaryPath } from './utils.js';
@@ -14,9 +15,23 @@ export const tools = {
   gdal: undefined,
 };
 
+
+async function checkRequiredGDALBinaries() {
+  const gdal = {};
+  for (const bin of Object.values(GDAL_BINARIES)) {
+    const installed = await findBinaryPath(bin);
+    if (!installed) {
+      return false;
+    }
+    gdal[bin] = installed;
+  }
+  return gdal;
+}
+
+
 export async function verifyDependencies() {
 
-  tools.conda = await findBinaryPath('conda');
+
   tools.homebrew = await checkBrewSupport();
 
   // const pdal = await findBinaryPath('pdal');
@@ -33,6 +48,11 @@ export async function verifyDependencies() {
     const condaBin = getCondaScriptPath();
     if (fs.existsSync(condaBin)) {
       tools.conda = condaBin;
+    } else {
+      const condaExists = await findBinaryPath('conda');
+      if (condaExists) {
+        tools.conda = 'conda';
+      }
     }
   }
   // check if we've already installed conda to our isolated env
@@ -49,5 +69,6 @@ export async function verifyDependencies() {
   if (tools.passed && tools.conda) {
     tools.condaEnv = getCondaEnvironmentPath();
   }
+  log.info('Tools detected', tools);
   return tools;
 }

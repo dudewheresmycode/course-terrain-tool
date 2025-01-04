@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import log from 'electron-log';
 import {
   runCommand,
   downloadFile,
@@ -37,14 +38,14 @@ export async function verifyCondaPackage(condaBin, packageName) {
   const condaEnvDir = getCondaEnvironmentPath();
   // only run this fetch once
   if (!fs.existsSync(condaEnvDir)) {
-    console.log('Conda environment not setup.');
+    log.warn('Conda environment not setup yet');
     return;
   }
   if (!cachedPackages) {
     // const condaEnvDir = path.join(getInstallDirectory(), 'ctt-env');
     const res = await execAsync(`${condaBin} list -p "${condaEnvDir}" --json`);
     cachedPackages = JSON.parse(res.stdout);
-    console.log('cachedPackages', cachedPackages);
+    log.debug(`Received ${cachedPackages.length} conda packages`);
   }
   const packageInList = cachedPackages.some((pkg) => pkg.name === packageName);
   if (packageInList) {
@@ -78,8 +79,8 @@ export async function installMiniforge() {
     // QUESTION: should we remove any previously downloaded files in this case?
     // await fs.promises.unlink(localSetupFile);
     await downloadFile(downloadUrl, localInstallerPath);
+    log.debug(`Finished download: ${downloadUrl} -> ${localInstallerPath}`);
   }
-  console.log(`Downloaded ${downloadUrl}\n-> ${localInstallerPath}`);
 
   const mfInstallDir = getMiniforgeDirectory();
   // ensure the directory exists
@@ -106,7 +107,7 @@ export async function installMiniforge() {
       mfInstallDir,
     ]);
   } else if (process.platform === 'win32') {
-    console.log(`installing miniforge to: ${mfInstallDir}`);
+    log.info(`Installing miniforge to ${mfInstallDir}`);
     await runCommand(
       'start',
       [
@@ -149,14 +150,14 @@ export async function installToolsWithConda(condaBin, installList) {
   ]);
 
   if (process.platform === 'win32') {
-    console.log('Running conda init...');
+    log.info('Initializing conda...');
     await runCommand(condaBin, [
       'init',
       '--json',
       '--user'
     ]);
   }
-  console.log('Cleaning up unused conda files...');
+  log.info('Cleaning up unused conda files...');
   await condaClean(condaBin)
 }
 

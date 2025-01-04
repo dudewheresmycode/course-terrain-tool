@@ -18,6 +18,9 @@
     "win": {
       "icon": "./resources/icon.ico"
     },
+    "extraResources": [
+      "./wms"
+    ],
     "files": [
       "!**/_tmp",
       "!**/docs",
@@ -49,6 +52,7 @@
   },
   "dependencies": {
     "axios": "^1.7.9",
+    "electron-log": "^5.2.4",
     "express": "^4.21.2",
     "express-ws": "^5.0.2",
     "p-map": "^7.0.3"

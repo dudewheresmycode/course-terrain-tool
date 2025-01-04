@@ -22,6 +22,7 @@
  * resolution or projection differ from the 3DEP standard DEM datasets.
  * 
 */
+import log from 'electron-log';
 
 const USGS_API = 'https://tnmaccess.nationalmap.gov/api/v1/products';
 
@@ -39,37 +40,38 @@ const USGS_ELEVATION_PRODUCTS = [
 ];
 
 async function fetchAll(polygon, offset = 0) {
+  // TODO: Implement pagination?
+  // For now we just set a max of 100 and hope we don't need more than that to cover a course area
   let urlSearchParams = `max=100&polygon=${encodeURIComponent(polygon)}&datasets=${encodeURIComponent(USGS_ELEVATION_PRODUCTS.join(','))}`;
   // if (offset) {
   //   urlSearchParams += `&offset=${offset}`;
   // }
   const fetchUrl = `${USGS_API}?${urlSearchParams}`;
   try {
-    console.log(`page: ${offset}, ${fetchUrl}`);
     const res = await fetch(fetchUrl);
-    console.log(`Returned: ${res.status}`);
     const data = await res.json();
+    log.info(`[usgs] Fetched ${data.length} results`);
     // if (data.total > data.items.length) {
     //   offset = data.items.length;
     //   return [...data.items, (await fetchAll(polygon, offset))]
     // }
     return data.items;
   } catch (error) {
-    console.log('Error', error);
+    log.error('[usgs] Error', error);
     throw error;
   }
 }
 
 function getProjectGroup(title) {
   if (!title) { return ''; }
-  // const bwords = base.toLowerCase().split(' ');
   const cwords = title.split(' ');
   const _tileId = cwords.pop();
   return cwords.join(' ');
 }
+
 export default async function search(polygon) {
   const allItems = await fetchAll(polygon);
-  const groupedByType = allItems.reduce((groups, item)=> {
+  const groupedByType = allItems.reduce((groups, item) => {
     const itemGroup = getProjectGroup(item.title);
     const existingGroup = groups.find(group => group.format === item.format && group.group === itemGroup);
     if (!existingGroup) {

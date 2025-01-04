@@ -2,6 +2,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import express from 'express';
+import log from 'electron-log';
 
 import './utils/startup.js';
 import { app as server } from './server/index.js';
@@ -9,6 +10,9 @@ import { verifyDependencies } from './tools/index.js';
 import { installDependencies } from './tools/installer.js';
 
 const PORT = process.env.PORT || 3133;
+
+// initializes the logger for any renderer process
+log.initialize();
 
 function createWindow() {
   // Create the browser window.
@@ -24,26 +28,21 @@ function createWindow() {
     }
   });
 
-  // and load the index.html of the app.
-  // mainWindow.loadFile(path.join(process.cwd(), 'index.html'))
-  // if (process.env.NODE_ENV === 'production') {
-  //   // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
-  //   mainWindow.loadURL('http://localhost:3030');
-  // } else {
-  //   mainWindow.loadURL('http://localhost:3133');
-  // }
   const isDevServer = process.argv.includes('devserver');
-  console.log('running in dev mode');
-  const PORT = isDevServer ? 3030 : 3133;
-  mainWindow.loadURL(`http://localhost:${PORT}`);
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools()
+  const port = isDevServer ? 3030 : 3133;
+  log.debug(`Running in ${isDevServer ? 'development' : 'production'} mode on port ${port}`);
+  mainWindow.loadURL(`http://localhost:${port}`);
+  if (isDevServer) {
+    // Open the DevTools.
+    mainWindow.webContents.openDevTools()
+  }
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
+  log.info('App starting up...');
 
   await startServer();
 
@@ -63,7 +62,7 @@ app.whenReady().then(async () => {
     return verifyDependencies();
   });
   ipcMain.handle('link-out', (event, location) => {
-    console.log(location);
+    log.info(`Opening external link ${location}`);
     shell.openExternal(location);
   });
   ipcMain.handle('select-folder', async () => {
@@ -78,6 +77,7 @@ app.whenReady().then(async () => {
     return folder;
   });
   ipcMain.handle('quit-app', (event) => {
+    log.info('Quitting app...');
     app.quit();
   });
 });
@@ -99,7 +99,7 @@ function startServer() {
     server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
 
     server.listen(PORT, () => {
-      console.log(`Server running at http://localhost:${PORT}`);
+      log.info(`Server running at http://localhost:${PORT}`);
       resolve();
     });
   });
