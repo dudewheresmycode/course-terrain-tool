@@ -21,7 +21,7 @@ import RangeInput from './RangeInput';
 
 function ResolutionMath(props) {
   return (
-    <FormHelperText error={props.size > 8000}>
+    <FormHelperText component="div" error={props.size > 8000}>
       <Box
         sx={{
           display: 'flex',

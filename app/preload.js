@@ -13,6 +13,9 @@ contextBridge.exposeInMainWorld('courseterrain', {
   verifyDependencies: async () => {
     return ipcRenderer.invoke('dependency-check');
   },
+  selectedMapStyle: () => {
+    return ipcRenderer.invoke('selected-map-style');
+  },
   addEventListener: (eventName, callback) => {
     return ipcRenderer.on(eventName, callback);
   },
