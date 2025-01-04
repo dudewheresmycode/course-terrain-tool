@@ -9,7 +9,7 @@ import { tools } from '../../../tools/index.js';
 
 const execAsync = promisify(exec);
 
-const wmsDirectory = path.resolve(app.getAppPath() || process.cwd(), 'wms');
+const wmsDirectory = path.resolve(app.getAppPath(), '../wms');
 
 function runCommand(binName, args, onProgress) {
   let progess = 0;

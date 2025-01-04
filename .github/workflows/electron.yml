@@ -24,10 +24,19 @@ jobs:
       - name: Set short hash (win)
         if: ${{ startsWith(matrix.os, 'win') }}
         run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
-
-      - name: Set short hash (mac)
+      
+      - name: Echo long hash
         if: ${{ startsWith(matrix.os, 'macos') }}
-        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $env:GITHUB_ENV
+        echo "${{ github.sha }}"
+
+      - name: Echo short hash
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        echo "${{ github.sha }}" | cut -c 1-8
+
+      - name: Set short hash (mac/linux)
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
+
 
       - name: Check outputs
         run: echo ${{ env.SHORT_SHA }}
@@ -36,6 +45,10 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 20
+      
+      # - name: Set short hash (mac)
+      #   if: ${{ startsWith(matrix.os, 'macos') }}
+      #   run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $env:GITHUB_ENV
 
       - name: "npm install"
         run: npm install
