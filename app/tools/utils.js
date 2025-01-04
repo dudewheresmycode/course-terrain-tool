@@ -5,27 +5,12 @@ import { promisify } from 'node:util';
 import { app } from 'electron';
 import axios from 'axios';
 
-import { CTT_DIR_NAME, MC_DIR_NAME, MC_ENV_NAME } from '../constants.js';
+import { CTT_DIR_NAME } from '../constants.js';
 
 export const execAsync = promisify(exec);
 
 export function getInstallDirectory() {
   return path.join(app.getPath('home'), CTT_DIR_NAME);
-}
-
-export function getMinicondaDirectory(name) {
-  return path.join(getInstallDirectory(), name ? name : MC_DIR_NAME);
-}
-
-export function getMiniCondaEnvironmentPath() {
-  return path.join(getInstallDirectory(), MC_ENV_NAME);
-}
-
-export function getMiniCondaScriptPath() {
-  return path.join(
-    getMinicondaDirectory(),
-    process.platform === 'win32' ? 'Scripts/conda.exe' : 'bin/conda'
-  );
 }
 
 export function runCommand(bin, args, options) {

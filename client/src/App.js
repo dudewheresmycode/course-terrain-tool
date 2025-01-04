@@ -43,7 +43,7 @@ export default function App() {
     console.log('handleDistanceChanged', distance);
     setDistance(distance);
   }, []);
-  
+
   const handleOuterChanged = useCallback((distance) => {
     console.log('handleOuterChanged', distance);
     setOuterDistance(distance);
@@ -73,9 +73,9 @@ export default function App() {
   useEffect(() => {
     window.courseterrain.verifyDependencies().then((report) => {
       console.log('passed', report);
-      if (!report.passed) {
-        setInstallerDialogOpen(true);
-      }
+      // if (!report.passed) {
+      //   setInstallerDialogOpen(true);
+      // }
       setHasRequiredDependencies(report.passed);
       setIsDependencyCheckPending(false);
     }).catch(error => {
@@ -84,12 +84,20 @@ export default function App() {
       window.courseterrain.quitApp();
     });
   }, []);
-  
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       {isDependencyCheckPending ? (
-        <Box><CircularProgress /></Box>
+        <Box sx={{
+          width: '100vw',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <CircularProgress size={75} />
+        </Box>
       ) : (
         <Box sx={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
           <AppBar position="relative" sx={{ flexGrow: 0, p: 1, display: 'flex', alignItems: 'center', flexDirection: 'row' }}>

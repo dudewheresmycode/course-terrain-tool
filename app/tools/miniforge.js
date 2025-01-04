@@ -2,17 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import {
   runCommand,
-  getMiniCondaEnvironmentPath,
   downloadFile,
   execAsync,
-  getInstallDirectory,
-  getMinicondaDirectory,
+  getInstallDirectory
 } from './utils.js';
-import {
-  MC_WIN_INSTALLER_URL,
-  MC_MAC_INSTALLER_URL,
-  MC_MAC_ARM64_INSTALLER_URL,
-} from '../constants.js';
 import mkdirSafe from '../utils/mkdirSafe.js';
 import {
   MF_DIR_NAME,
@@ -60,20 +53,22 @@ export async function verifyCondaPackage(condaBin, packageName) {
 }
 
 function getDownloadUrl() {
-  if (process.platform === 'darwin') {
+  const { platform } = process;
+  if (platform === 'darwin') {
     if (process.arch === 'arm64') {
       return MINIFORGE_MAC_ARM;
     }
     return MINIFORGE_MAC_X86;
-  } else if (process.platform === 'win32') {
+  } else if (platform === 'win32') {
     return MINIFORGE_WIN;
+  } else {
+    throw new Error(`Unsupported platform ${platform}`);
   }
 }
 
 export async function installMiniforge() {
-  // https://github.com/conda-forge/miniforge?tab=readme-ov-file#non-interactive-install
   const downloadUrl = getDownloadUrl();
-  console.log(downloadUrl);
+
   const localInstallerPath = path.join(
     getInstallDirectory(),
     path.basename(new URL(downloadUrl).pathname)
@@ -91,6 +86,7 @@ export async function installMiniforge() {
   mkdirSafe(mfInstallDir);
 
   /**
+  * https://github.com/conda-forge/miniforge?tab=readme-ov-file#non-interactive-install
   * Installs Miniforge3 24.11.0-0
   * -b           run install in batch mode (without manual intervention),
   *              it is expected the license terms (if any) are agreed upon

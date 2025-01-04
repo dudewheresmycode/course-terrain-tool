@@ -30,7 +30,7 @@
     "app:dir": "electron-builder --dir",
     "app:dist": "electron-builder --publish never",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "client": "concurrently --kill-others  'npm run debug --workspace=client' 'npm run start -- dev'",
+    "client": "concurrently --kill-others  'npm run debug --workspace=client' 'npm run start -- devserver'",
     "_server": "npm start --workspace=server",
     "build": "npm run build --workspace=client",
     "_develop": "CTC_DEBUG=1 concurrently --kill-others 'npm run debug --workspace=client' 'npm start --workspace=server'",

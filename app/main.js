@@ -9,7 +9,7 @@ import { verifyDependencies, installDependencies } from './tools/installer.js';
 
 const PORT = process.env.PORT || 3133;
 
-function createWindow () {
+function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1200,
@@ -25,13 +25,16 @@ function createWindow () {
 
   // and load the index.html of the app.
   // mainWindow.loadFile(path.join(process.cwd(), 'index.html'))
-  if (process.env.CLIENT_DEV_MODE) {
-    // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
-    mainWindow.loadURL('http://localhost:3030');
-  } else {
-    mainWindow.loadURL('http://localhost:3133');
-  }
-
+  // if (process.env.NODE_ENV === 'production') {
+  //   // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
+  //   mainWindow.loadURL('http://localhost:3030');
+  // } else {
+  //   mainWindow.loadURL('http://localhost:3133');
+  // }
+  const isDevServer = process.argv.includes('devserver');
+  console.log('running in dev mode');
+  const PORT = isDevServer ? 3030 : 3133;
+  mainWindow.loadURL(`http://localhost:${PORT}`);
   // Open the DevTools.
   mainWindow.webContents.openDevTools()
 }
@@ -40,7 +43,7 @@ function createWindow () {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-    
+
   await startServer();
 
   createWindow();
@@ -50,7 +53,7 @@ app.whenReady().then(async () => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
-  
+
   ipcMain.on('install-tools', async (event) => {
     event.sender.send('install-progress', { text: 'Setting up installation' });
     await installDependencies(event.sender);
