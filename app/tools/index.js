@@ -14,6 +14,20 @@ export const tools = {
   gdal: undefined,
 };
 
+
+async function checkRequiredGDALBinaries() {
+  const gdal = {};
+  for (const bin of Object.values(GDAL_BINARIES)) {
+    const installed = await findBinaryPath(bin);
+    if (!installed) {
+      return false;
+    }
+    gdal[bin] = installed;
+  }
+  return gdal;
+}
+
+
 export async function verifyDependencies() {
 
 

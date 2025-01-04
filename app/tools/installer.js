@@ -5,19 +5,6 @@ import { installMiniforge, installToolsWithConda } from './miniforge.js';
 import { tools, verifyDependencies } from './index.js';
 
 
-async function checkRequiredGDALBinaries() {
-  const gdal = {};
-  for (const bin of Object.values(GDAL_BINARIES)) {
-    const installed = await findBinaryPath(bin);
-    if (!installed) {
-      return false;
-    }
-    gdal[bin] = installed;
-  }
-  return gdal;
-}
-
-
 function handleError(sender, error) {
   sender.send('install-error', error);
   throw new Error(error);
