@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import log from 'electron-log';
 
 import { GDAL_BINARIES } from '../constants.js';
 import { findBinaryPath } from './utils.js';
@@ -68,5 +69,6 @@ export async function verifyDependencies() {
   if (tools.passed && tools.conda) {
     tools.condaEnv = getCondaEnvironmentPath();
   }
+  log.info('Tools detected', tools);
   return tools;
 }

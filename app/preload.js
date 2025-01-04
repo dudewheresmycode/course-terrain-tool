@@ -9,11 +9,6 @@ const { contextBridge, ipcRenderer } = require('electron');
  * https://www.electronjs.org/docs/latest/tutorial/sandbox
  */
 
-// eslint-disable-next-line no-undef
-window.addEventListener('DOMContentLoaded', () => {
-  console.log('hello from preload!');
-});
-
 contextBridge.exposeInMainWorld('courseterrain', {
   verifyDependencies: async () => {
     return ipcRenderer.invoke('dependency-check');
@@ -28,8 +23,6 @@ contextBridge.exposeInMainWorld('courseterrain', {
     return ipcRenderer.send('install-tools');
   },
   openExternal: (location) => {
-    console.log('linkout', location);
-    // shell.openExternal(location);
     ipcRenderer.invoke('link-out', location);
   },
   selectFolder: () => {

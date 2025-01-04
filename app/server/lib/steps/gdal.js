@@ -1,7 +1,7 @@
 import path from 'path';
 import { promisify } from 'util';
 import { spawn, exec } from 'child_process';
-import pMap from 'p-map';
+import log from 'electron-log';
 
 import { GDAL_BINARIES } from '../../../constants.js';
 import { tools } from '../../../tools/index.js';
@@ -17,18 +17,12 @@ function runCommand(binName, args, onProgress) {
     if (!bin) {
       throw new Error('Unable to find tool location');
     }
-    // let [bin] = cmd;
-    // if (cmd.length > 1) {
-    //   const [_bin, _args] = cmd;
-    //   args.unshift(..._args);
-    //   bin = _bin;
-    // }
     const child = spawn(bin, [
       ...extraArgs,
       ...args
     ]);
     child.stderr.on('data', (data) => {
-      console.log(`stderr: ${data}`);
+      log.info(`[${binName}]: ${data}`);
       if (typeof onProgress === 'function') {
         onProgress(data);
       }
@@ -41,15 +35,12 @@ function runCommand(binName, args, onProgress) {
       } else if (int) {
         progess = int;
       }
-      if (progess) {
-        console.log(`working: ${progess}%`);
-      }
       if (typeof onProgress === 'function') {
         onProgress(data);
       }
     });
     child.on('close', (exitCode) => {
-      console.log(`exited with code : ${exitCode}`);
+      log.debug(`exited with code : ${exitCode}`);
       if (exitCode !== 0) {
         return reject();
       }
@@ -64,8 +55,6 @@ function runCommand(binName, args, onProgress) {
  */
 
 function getGDALCommand(binaryName) {
-  console.log('binaryName', binaryName, tools.gdal.bin[binaryName]);
-  console.log('tool', tools.gdal);
   const gdalbin = tools.gdal.bin[binaryName];
   if (!gdalbin) {
     return;
@@ -89,7 +78,6 @@ export async function getGeoTiffStats(geoTiffPath) {
     // const binary = tools.gdal.type === 'conda' ? `${tools.conda} ${tools.gdal.gdalinfo}` : tools.gdal.gdalinfo;
     const res = await execAsync(`${cmd.join(' ')} -mm -json "${geoTiffPath}"`);
     const data = JSON.parse(res.stdout);
-    console.log(data);
     const [band] = data.bands;
     if (!band) {
       throw new Error('No band found in TIFF file');
@@ -104,7 +92,7 @@ export async function getGeoTiffStats(geoTiffPath) {
       unit
     };
   } catch (error) {
-    console.log(error);
+    log.error(error);
   }
 }
 
@@ -148,27 +136,13 @@ export async function geoTiffToRaw(sourceFile, stats) {
   return destFile;
 }
 
-// crop tif
-export function cropGeoTIFFToCoordinates(coordinates) {
-  // gdalwarp -of GTiff -crop_to_cutline -cutline #.geojson #.tif #.tif
-  // const geoJSON = {
-  //   'type': 'Feature',
-  //   'geometry': {
-  //     'type': 'Polygon',
-  //     'coordinates': [coordinates]
-  //   }
-  // }
-  // const wkt = `LINESTRING (30 10, 10 30, 40 40)`;
-  const wkt = `POLYGON ((${coordinates.map(coord => coord.join(' ')).join(', ')}))`;
-}
-
 /**
  * requires:
  * - gdaldem
  */
 export async function geoTIFFHillShade(sourceFile, outputDirectory) {
   const destFile = path.join(outputDirectory, 'hillshade.tif');
-  await runCommand('gdaldem', ['hillshade', '-compute_edges', sourceFile, destFile]);
+  await runCommand(GDAL_BINARIES.gdaldem, ['hillshade', '-compute_edges', sourceFile, destFile]);
   return tifToJPG(destFile);
 }
 
@@ -197,13 +171,10 @@ export async function generateSatelliteForSource(source, outputDirectory, filena
   const destFile = path.join(outputDirectory, `${filename}_sat_${source}.tif`);
 
   const wmsSource = path.join(wmsDirectory, `${source}.xml`);
-  console.log('wmsSource', wmsSource);
 
   const [xMin, yMin] = coordinates[0];
   const [xMax, yMax] = coordinates[2];
-  const projwin = [xMin, xMax, yMin, yMax];
-  console.log('projwin', projwin);
-  // const progwin = coordinates.map(coord => coord.join(' ')).join(' ');
+
   await runCommand(GDAL_BINARIES.gdal_translate, [
     '-of', 'GTiff',
     '-projwin', ...[xMin, yMin, xMax, yMax],
@@ -216,8 +187,4 @@ export async function generateSatelliteForSource(source, outputDirectory, filena
   ]);
   const destJPEG = await tifToJPG(destFile, true);
   return { tiff: destFile, jpeg: destJPEG };
-  // return tifToJPG(destFile, true);
-
-  // gdal_translate -of GTiff "C:\map data\Sydney\tiles.xml" "C:\map data\sydney.tiff" -projwin 151.033285 -33.743981 151.300567 -33.957583
-  // gdal_translate
 }

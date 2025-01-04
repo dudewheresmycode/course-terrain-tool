@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
+import log from 'electron-log';
 
 import downloadDataSources from './steps/download.js';
 import generateCSV from './steps/csv.js';
@@ -58,6 +59,12 @@ export class Job extends EventEmitter {
     });
   }
 
+  updateProgress({ step, label, percent }) {
+    this.progress = { step, label, percent };
+    this.update();
+    log.info(`[${step}]${percent ? '[' + percent.toFixed(1) + '%]' : ''} ${label}`);
+  }
+
   async process() {
     // console.log(this.data);
     // return;
@@ -69,7 +76,8 @@ export class Job extends EventEmitter {
         throw new Error('Missing outputDirectory. Unable to continue');
       }
       this.courseDirectory = this.data.outputFolder;
-      console.log('this.courseDirectory', this.courseDirectory);
+      log.info(`Using course directory: ${this.courseDirectory}`);
+
       if (fs.existsSync(this.courseDirectory)) {
         throw new Error(`Course directory already exists! ${this.courseDirectory}`);
       }
@@ -83,21 +91,15 @@ export class Job extends EventEmitter {
       // console.log(`Creating new course directory: ${this.courseDirectory}`);
       // mkdirSafe(this.courseDirectory);
 
-      this.progress = { step: 'download', label: 'Downloading lidar data', percent: 0 };
-      this.update();
-      console.log(this.courseDirectory);
-      console.log(tools);
+      this.updateProgress({ step: 'download', label: 'Downloading lidar data files' });
 
       if (!this.data.dataSource?.format) {
         throw new Error('Missing valid data source format!');
       }
 
-      this.progress = { step: 'download', label: 'Preparing to download lidar data' };
-      this.update();
-
       // create download directory
       const rawDataDirectory = path.join(this.courseDirectory, 'Downloads');
-      console.log(`rawDataDirectory: ${rawDataDirectory}`);
+      log.debug(`Creating Downloads directory at ${rawDataDirectory}`);
       mkdirSafe(rawDataDirectory);
 
 
@@ -107,8 +109,11 @@ export class Job extends EventEmitter {
         downloadDirectory: rawDataDirectory,
         onDownloadProgress: (percent) => {
           const percentString = percent ? ` - ${percent.toFixed(1)}%` : '';
-          this.progress = { step: 'download', label: `Downloading ${this.data.dataSource.items.length} lidar files${percentString}`, percent: percent };
-          this.update();
+          this.updateProgress({
+            step: 'download',
+            label: `Downloading ${this.data.dataSource.items.length} lidar data files${percentString}`,
+            percent
+          });
         }
       });
 
@@ -122,37 +127,45 @@ export class Job extends EventEmitter {
 
         // create download directory
         const lazDataDirectory = path.join(this.courseDirectory, 'LAS');
+        log.debug(`Creating LAS directory at ${lazDataDirectory}`);
         mkdirSafe(lazDataDirectory);
 
+        this.updateProgress({
+          step: 'process',
+          label: `Merging ${this.data.dataSource.items.length} lidar files`
+        });
 
-        this.progress = { step: 'process', label: `Merging ${this.data.dataSource.items.length} lidar files` };
-        this.update();
         // generates GeoTIFFs from the LAZ source files we downloaded in the previous step
-
         const cropCoordinates = this.data.coordinates.outer.length ? this.data.coordinates.outer : this.data.coordinates.inner;
         const mergedLaz = await mergeLaz(dataWithLocalFiles, cropCoordinates, lazDataDirectory);
 
-        this.progress = { step: 'raw', label: 'Preparing GeoTIFFs...' };
-        this.update();
+        this.updateProgress({ step: 'raw', label: 'Preparing GeoTIFFs...' });
 
         const tiffDirectory = path.join(this.courseDirectory, 'GeoTIFF');
+        log.debug(`Creating GeoTIFF directory at ${tiffDirectory}`);
         mkdirSafe(tiffDirectory);
 
-        this.progress = { step: 'process', label: 'Converting lidar data to inner GeoTIFF', secondary: 'This step may take a while' };
-        this.update();
+        this.updateProgress({
+          step: 'process',
+          label: 'Converting lidar data to inner GeoTIFF',
+          secondary: 'This step could take a while'
+        });
 
         // convert LAZ files to TIFF
-        const innerLaz = await this.laz(mergedLaz, 'inner', this.data.resolution.inner, tiffDirectory, this.data.coordinates.inner);
+        const innerLaz = await this.processLaz(mergedLaz, 'inner', this.data.resolution.inner, tiffDirectory, this.data.coordinates.inner);
         innerStats = innerLaz.stats;
         innerTiff = innerLaz.geoTiff;
 
         // creating the outer heightmap is optional
         if (this.data.coordinates.outer.length) {
-          this.progress = { step: 'process', label: 'Converting lidar data to outer GeoTIFF', secondary: 'This step may take a while' };
-          this.update();
+          this.updateProgress({
+            step: 'process',
+            label: 'Converting lidar data to outer GeoTIFF',
+            secondary: 'This step may take a while'
+          });
 
           // convert LAZ files to TIFF
-          const outerLaz = await this.laz(mergedLaz, 'outer', this.data.resolution.outer, tiffDirectory); // this.data.coordinates.outer
+          const outerLaz = await this.processLaz(mergedLaz, 'outer', this.data.resolution.outer, tiffDirectory); // this.data.coordinates.outer
           outerStats = outerLaz.stats;
           outerTiff = outerLaz.geoTiff;
         }
@@ -166,32 +179,29 @@ export class Job extends EventEmitter {
       if (!innerTiff || !innerStats) {
         throw new Error('Unable to generate inner TIFF');
       }
-      this.progress = { step: 'raw', label: `Generating inner to height map (1 of ${outerTiff ? 2 : 1})` };
-      this.update();
+      this.updateProgress({ step: 'raw', label: `Generating inner height map (1 of ${outerTiff ? 2 : 1})` });
 
       // create inner raw terrain
       await geoTiffToRaw(innerTiff, innerStats);
 
       if (outerTiff && outerStats) {
-        this.progress = { step: 'raw', label: 'Generating outer height map (2 of 2)' };
-        this.update();
+        this.updateProgress({ step: 'raw', label: 'Generating outer height map (2 of 2)' });
         // create outer raw terrain
         await geoTiffToRaw(outerTiff, outerStats);
       }
 
-      this.progress = { step: 'raw', label: 'Preparing overlays...' };
-      this.update();
+      this.updateProgress({ step: 'raw', label: 'Preparing overlays...' });
 
       // create overlays directory
       const overlaysDirectory = path.join(this.courseDirectory, 'Overlays');
-      console.log(`overlaysDirectory: ${overlaysDirectory}`);
+      log.debug(`Creating overlays directory: ${overlaysDirectory}`);
       mkdirSafe(overlaysDirectory);
 
       // generate satellite images
       const boundTypes = ['inner', outerTiff && 'outer'].filter(Boolean); // TODO: make outer optional
       const totalSteps = SATELLITE_SOURCES.length * boundTypes.length;
 
-      this.progress = { step: 'satellite', label: `Generating satellite images (1 of ${totalSteps}, 0%)`, percent: 0 };
+      this.updateProgress({ step: 'satellite', label: `Generating satellite images (1 of ${totalSteps}, 0%)`, percent: 0 });
       this.update();
 
       for (const [boundIndex, boundType] of boundTypes.entries()) {
@@ -223,33 +233,29 @@ export class Job extends EventEmitter {
       this.update();
 
     } catch (error) {
-      console.log(error);
+      log.error(error);
       this.error = error;
       this.state = JobStates.Error;
       this.update();
     }
   }
 
-  async laz(mergedPointCloud, filenamePrefix, resolution, outputDirectory, coordinates) {
+  async processLaz(mergedPointCloud, filenamePrefix, resolution, outputDirectory, coordinates) {
     // this.data.coordinates
     // generate merged GeoTIFF from laz file(s)
-    console.log('[inner] Converting merged laz into a single high-res inner geoTIFF');
+    log.info('Converting merged laz into a single high-res inner geoTIFF');
     const tiff = await lazToTiff(mergedPointCloud, filenamePrefix, resolution, outputDirectory, coordinates);
-    // const innerGeoTiff = await mergeLaz(this.data.course, filenamePrefix, coordinates, dataWithLocalFiles, resolution, outputDirectory);
     // fill missing raster data in GeoTIFF
-    console.log('[inner] Interpolating missing terrain data from merged geoTIFF');
+    log.info('Interpolating missing terrain data from merged geoTIFF');
     const filledGeoTiff = await fillNoData(tiff, filenamePrefix, resolution, outputDirectory);
     // TODO: remove original merged geotiff
-    // await fs.promises.unlink(innerGeoTiff);
+    // await fs.promises.unlink(tiff);
     const stats = await getGeoTiffStats(filledGeoTiff);
+
     return {
       stats,
       geoTiff: filledGeoTiff
     }
-  }
-
-  async processOuter() {
-
   }
 
 }
