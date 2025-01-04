@@ -14,25 +14,23 @@ jobs:
       DEBUG: electron-builder
       GH_TOKEN: ${{ secrets.github_token }}
     steps:
-      - name: Set vars on windows
-        if: ${{ startsWith(matrix.os, 'win') }}
-        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
-
       # - name: Set vars on macos
       #   if: ${{ startsWith(matrix.os, 'macos') }}
       #   run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
 
-      - name: Set outputs
+      - name: Check out repository
+        uses: actions/checkout@v1
+
+      - name: Set short hash (win)
+        if: ${{ startsWith(matrix.os, 'win') }}
+        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
+
+      - name: Set short hash (mac)
         if: ${{ startsWith(matrix.os, 'macos') }}
-        id: vars
         run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $env:GITHUB_ENV
 
       - name: Check outputs
         run: echo ${{ env.SHORT_SHA }}
-
-
-      - name: Check out repository
-        uses: actions/checkout@v1
 
       - name: Install Node.js, NPM and Yarn
         uses: actions/setup-node@v1
