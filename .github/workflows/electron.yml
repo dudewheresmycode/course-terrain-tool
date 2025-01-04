@@ -18,9 +18,18 @@ jobs:
         if: ${{ startsWith(matrix.os, 'win') }}
         run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 8))" >> $env:GITHUB_ENV
 
-      - name: Set vars on macos
+      # - name: Set vars on macos
+      #   if: ${{ startsWith(matrix.os, 'macos') }}
+      #   run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
+
+      - name: Set outputs
         if: ${{ startsWith(matrix.os, 'macos') }}
-        run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
+        id: vars
+        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $env:GITHUB_ENV
+
+      - name: Check outputs
+        run: echo ${{ env.SHORT_SHA }}
+
 
       - name: Check out repository
         uses: actions/checkout@v1
