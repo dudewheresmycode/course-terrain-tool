@@ -3,7 +3,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import express from 'express';
 import log from 'electron-log';
-import { autoUpdater } from 'electron-updater';
+import electronUpdater from 'electron-updater';
 
 import './utils/startup.js';
 import { app as server } from './server/index.js';
@@ -14,6 +14,9 @@ const PORT = process.env.PORT || 3133;
 
 // initializes the logger for any renderer process
 log.initialize();
+
+// initialize the auto-updater
+const { autoUpdater } = electronUpdater;
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 
