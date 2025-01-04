@@ -1,6 +1,5 @@
-Course Terrain Tool (CTT) depends on a couple libraries to process the LiDAR and TIFF files
+Course Terrain Tool (CTT) depends on a couple libraries to process the LiDAR data and satellite imagery. You can install these yourself before launching CTT, or we'll prompt you to automatically install them using our automated install process.
 
-# Requirements
 
 ### GDAL
 
@@ -12,7 +11,7 @@ Course Terrain Tool (CTT) depends on a couple libraries to process the LiDAR and
 
 ### Conda\*
 
-We use [`miniconda`](https://docs.anaconda.com/miniconda/) to install GDAL and PDAL into an isolated environment on your computer. You may be prompted to have CTT automatically install Conda on your system during initial setup.
+During the installation process, we first install [`conda-forge`](https://conda-forge.org/download/) to install GDAL and PDAL into an isolated environment on your computer. You may be prompted to have CTT automatically install Conda on your system during initial setup.
 
 > [!NOTE]
 > Conda is optional on macOS. You can install GDAL and PDAL manually using homebrew.
@@ -25,7 +24,41 @@ Just click **Install Required Tools** and we'll automagically install the tools 
 
 Once finished, you should be able to use CTT to export terrain.
 
-## Manually Install Tools
+## Troubleshooting
+
+If you experience issues with the installation process, or encounter errors using the tool. Try clearing out the previous install of `mini-forge` by deleting the folder at the following path:
+
+Mac OS:
+```
+~/CourseTerrainTool
+```
+
+Windows:
+```
+%USERPROFILE%\CourseTerrainTool\
+```
+
+Then relaunch the CTT application.
+
+### Application Logs
+
+Please include full logs with any issues ou file. The CTT application logs can be found at the following locations:
+
+Mac OS:
+```
+~/Library/Logs/course-terrain-tool/main.log
+```
+
+Windows:
+```
+%USERPROFILE%\AppData\Roaming\course-terrain-tool\logs\main.log
+```
+
+
+Please report any bugs/issues on our [issues page](https://github.com/dudewheresmycode/course-terrain-tool/issues/new?title=Bug%20Report:%20)
+
+---
+## Manually Install Required Tools
 
 If you'd prefer not to use the Setup Wizard, you can install the required tools onto your machine system-wide before starting Course Terrain Tool.
 
