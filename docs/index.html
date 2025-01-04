@@ -1,12 +1,72 @@
-<div style="display:flex;">
-  <div>
-    <button>Download</button>
-    Available on Windows and Mac
-  </div>
-  <div style="width:200px">
-    <img src="./images/icon@2x.png" width="200" />
-  </div>
-</div>
+<!doctype html>
+<html lang="en">
 
-<p>Course Terrain Tool is an open source tool to find and process terrain data for use in the
-  [OPCD](https://zerosandonesgcd.com/opcd-course-creation/) golf course design process.</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Course Terrain Tool</title>
+  <!-- <link rel="stylesheet" type="text/css" href="style.css" /> -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css"
+    integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+</head>
+
+<body>
+  <div class="jumbotron" data-bs-theme="dark">
+    <div class="container">
+      <div class="row">
+        <div class="hero-text col-lg-8 col-md-12">
+          <h1>Course Terrain Tool</h1>
+          <h2 class="mb-4">Create OPCD terrain data in one click</h2>
+          <div class="d-flex align-items-center">
+            <div class="button-cta">
+              <a class="btn btn-success btn-lg" href="https://github.com/dudewheresmycode/course-terrain-tool/releases"
+                role="button" target="_blank">
+                Download Now
+              </a>
+            </div>
+            <div class="ml-2">
+              Available for Windows and Mac
+            </div>
+          </div>
+        </div>
+        <div id="hero-icon" class="col-4 d-none d-lg-block">
+          <img src="./images/icon@2x.png" width="250" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="page" style="height:500px;">
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-6 pr-md-5 appinfo-ss">
+          <img src="images/screenshot_win.jpg" width="100%" />
+        </div>
+        <div class="col-sm-6 pt-2 appinfo-text">
+          <p>Course Terrain Tool is an open source tool to find and convert raw lidar elevation data to raw unity
+            terrain
+            data. Specifically for use in the
+            <a target="_blank" href="https://zerosandonesgcd.com/opcd-course-creation/">OPCD</a> course design process.
+          </p>
+          <h3>How it works</h3>
+          <ol>
+            <li>Define your inner (and optional outer) area of your course on the map</li>
+            <li>Search the area for free lidar data sources</li>
+            <li>Configure your resolution settings</li>
+            <li>Sit back and watch the magic happen!</li>
+          </ol>
+          <p>
+            <a class="btn btn-secondary" href="https://github.com/dudewheresmycode/course-terrain-tool">View on
+              GitHub</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    Copyright &copy; 2025 <a href="https://github.com/dudewheresmycode">dudewheresmycode</a>
+  </div>
+</body>
+
+</html>
