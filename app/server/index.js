@@ -20,7 +20,7 @@ app.ws('/progress', (ws, req) => {
     if (message.event === 'submit') {
       const job = jobQueue.add(message.data);
       job.on('update', jobState => {
-        console.log('Job Progress', jobState.progress);
+        // console.log('Job Progress', jobState.progress);
         ws.send(JSON.stringify({ event: 'job', job: jobState }));
       });
     }

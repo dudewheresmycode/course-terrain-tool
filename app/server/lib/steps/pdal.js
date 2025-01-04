@@ -125,44 +125,46 @@ export async function mergeLaz(items, coordinates, outputDirectory) {
     ]
   };
 
-  return new Promise((resolve, reject) => {
-    const child = spawn('pdal', [
-      // '--help'
-      'pipeline',
-      '--verbose=8',
-      // `--progress=${fifo}`,
-      '--stdin'
-    ]);
+  await runPipelineCommand(pipeline);
+  return lazOutputFile;
+  // return new Promise((resolve, reject) => {
+  //   const child = spawn('pdal', [
+  //     // '--help'
+  //     'pipeline',
+  //     '--verbose=8',
+  //     // `--progress=${fifo}`,
+  //     '--stdin'
+  //   ]);
 
-    // const readStream = fs.createReadStream(fifo);
-    // readStream.on('error', error => {
-    //   console.log(`fifo-error: ${error}`);
-    // });
-    // readStream.on('data', data => {
-    //   console.log(`fifo: ${data}`);
-    // });
-    // readStream.on('close', () => {
-    //   console.log(`fifo closed`);
-    // });
+  //   // const readStream = fs.createReadStream(fifo);
+  //   // readStream.on('error', error => {
+  //   //   console.log(`fifo-error: ${error}`);
+  //   // });
+  //   // readStream.on('data', data => {
+  //   //   console.log(`fifo: ${data}`);
+  //   // });
+  //   // readStream.on('close', () => {
+  //   //   console.log(`fifo closed`);
+  //   // });
 
-    child.stderr.on('data', data => {
-      console.log(`stderr: ${data}`);
-    });
-    child.stdout.on('data', data => {
-      console.log(`stdout: ${data}`);
-    });
-    console.log('writing stdin');
-    child.stdin.write(JSON.stringify(pipeline));
-    child.stdin.end();
+  //   child.stderr.on('data', data => {
+  //     console.log(`stderr: ${data}`);
+  //   });
+  //   child.stdout.on('data', data => {
+  //     console.log(`stdout: ${data}`);
+  //   });
+  //   console.log('writing stdin');
+  //   child.stdin.write(JSON.stringify(pipeline));
+  //   child.stdin.end();
 
-    child.on('close', code => {
-      console.log(`exited with code: ${code}`);
-      if (code !== 0) {
-        return reject();
-      }
-      resolve(lazOutputFile);
-    });
-  });
+  //   child.on('close', code => {
+  //     console.log(`exited with code: ${code}`);
+  //     if (code !== 0) {
+  //       return reject();
+  //     }
+  //     resolve(lazOutputFile);
+  //   });
+  // });
 }
 
 export async function getLAZInfo(inputFile) {
