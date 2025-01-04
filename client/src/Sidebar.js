@@ -11,12 +11,34 @@ import Typography from '@mui/material/Typography';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Cached';
 import InfoIcon from '@mui/icons-material/Info';
+import WarningIcon from '@mui/icons-material/Warning';
 
 import DistanceInput from './DistanceInput';
 import SearchDialog from './SearchDialog';
 import ProgressDialog from './ProgressDialog';
 import { Alert, Checkbox, FormHelperText, TextField } from '@mui/material';
 import RangeInput from './RangeInput';
+
+function ResolutionMath(props) {
+  return (
+    <FormHelperText error={props.size > 8000}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
+        {props.size > 8000 ? (
+          <WarningIcon sx={{ fontSize: '12px', mr: 1 }} />
+        ) : null}
+        <span>
+          Outputs {props.size}&times;{props.size}
+        </span>
+      </Box>
+    </FormHelperText>
+  )
+}
 
 export default function Sidebar(props) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -26,7 +48,7 @@ export default function Sidebar(props) {
   const [courseNameError, setCourseNameError] = useState('');
   const [tifResolution, setTifResolution] = useState(0.5); // default is 40 cm
   const [tifResolutionOuter, setTifResolutionOuter] = useState(1); // default is 2m
-  
+
   const ws = useRef(null);
 
   const handleSearchClose = () => setSearchOpen(false);
@@ -41,20 +63,43 @@ export default function Sidebar(props) {
   }, [tifResolutionOuter, props.distance, props.outerDistance]);
 
   const handleJobSubmit = useCallback(async () => {
-    if (!courseName || /[^a-z0-9\_\-]/i.test(courseName)) {
-      return setCourseNameError('You must enter a valid course name (no special characters or spaces)');
+    // if (!courseName || /[^a-z0-9\_\-]/i.test(courseName)) {
+    //   return setCourseNameError('You must enter a valid course name (no special characters or spaces)');
+    // }
+    // setCourseNameError('');
+    let outputFolder;
+    let courseName;
+    if (window.courseterrain) {
+      const response = await window.courseterrain.selectFolder();
+      if (response.canceled) {
+        return;
+      }
+      if (response.filePath) {
+        outputFolder = response.filePath;
+      }
+    } else {
+      alert('Are you running this outside of electron?');
+      return
+      // courseName = prompt("Enter a course name");
+      // if (!courseName) {
+      //   return;
+      // }
     }
-    setCourseNameError('');
-
+    if (!outputFolder) {
+      return;
+    }
+    console.log('outputTo', outputFolder);
     setProgressDialogOpen(true);
+
     const { distance, coordinates, outerDistance } = props;
     const payload = {
-      course: courseName,
+      // course: courseName,
+      outputFolder,
       coordinates,
       distance,
       outerDistance,
       dataSource: props.dataSource,
-      resolution: { 
+      resolution: {
         inner: tifResolution,
         outer: tifResolutionOuter
       }
@@ -137,6 +182,10 @@ export default function Sidebar(props) {
       console.log(error);
     }
   }, []);
+  const handleSelectFolder = async () => {
+    const outputFolder = await window.courseterrain.selectFolder();
+    console.log(outputFolder);
+  }
 
   useEffect(() => {
     const wsHost = window.location.host ? window.location.host : 'localhost:3133';
@@ -157,14 +206,14 @@ export default function Sidebar(props) {
       ws.current.removeEventListener('close', handleSocketClosed);
       ws.current.removeEventListener('message', handleMessage);
       ws.current.removeEventListener('error', handleError);
-  
+
       wsCurrent.close();
     };
   }, []);
-  
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', pl: 3, pt: 3, height: '100%', gap: 3 }}>
-      <Box>
+      {/* <Box>
         <TextField
           label="Course Name"
           value={courseName}
@@ -173,7 +222,16 @@ export default function Sidebar(props) {
           error={!!courseNameError}
           helperText={courseNameError}
         />
-      </Box>
+      </Box> */}
+      {/* <Box>
+        <Button
+          fullWidth={true}
+          variant="contained"
+          onClick={handleSelectFolder}
+        >
+          Select Output Folder
+        </Button>
+      </Box> */}
 
       {!props.coordinates ? (
         <Box sx={{ mb: 3 }}>
@@ -206,7 +264,6 @@ export default function Sidebar(props) {
             </FormControl>
             <FormControl fullWidth={true} variant="outlined">
               <Button
-                labelId="data-button"
                 fullWidth={true}
                 color={props.dataSource ? '' : 'primary'}
                 startIcon={props.dataSource ? null : (<SearchIcon />)}
@@ -229,12 +286,11 @@ export default function Sidebar(props) {
                     step={0.1}
                     suffix={'m'}
                     value={tifResolution}
-                    disabled={props.dataSource?.format!=='LAZ'}
+                    disabled={props.dataSource?.format !== 'LAZ'}
                     onChange={handleResolutionChange}
                   />
-                  <FormHelperText>
-                    {innerResolutionDimensions}&times;{innerResolutionDimensions}
-                  </FormHelperText>
+                  <ResolutionMath size={innerResolutionDimensions} />
+
                 </FormControl>
                 {
                   props.outerDistance ? (
@@ -246,12 +302,27 @@ export default function Sidebar(props) {
                         step={0.1}
                         suffix={'m'}
                         value={tifResolutionOuter}
-                        disabled={props.dataSource?.format!=='LAZ'}
+                        disabled={props.dataSource?.format !== 'LAZ'}
                         onChange={handleResolutionOuterChange}
                       />
-                      <FormHelperText>
-                        {outerResolutionDimensions}&times;{outerResolutionDimensions}
-                      </FormHelperText>
+                      <ResolutionMath size={outerResolutionDimensions} />
+
+                      {/* <FormHelperText error={outerResolutionDimensions > 8000}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          {outerResolutionDimensions > 8000 ? (
+                            <WarningIcon sx={{ fontSize: '12px', mr: 1 }} />
+                          ) : null}
+                          <span>
+                            Outputs {outerResolutionDimensions}&times;{outerResolutionDimensions}
+                          </span>
+                        </Box>
+                      </FormHelperText> */}
                       {/* <FormHelperText>Tip: Smaller resolutions create larger files and take longer to process</FormHelperText> */}
                     </FormControl>
                   ) : null
@@ -287,7 +358,7 @@ export default function Sidebar(props) {
 
               </>
             ) : null}
-            
+
           </Box>
 
           <Box sx={{ mb: 3 }}>
@@ -297,8 +368,8 @@ export default function Sidebar(props) {
               disabled={!props.dataSource}
               onClick={handleJobSubmit}
             >
-                Submit Job
-              </Button>
+              Create Files
+            </Button>
           </Box>
 
         </Box>

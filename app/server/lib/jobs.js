@@ -14,13 +14,12 @@ import {
   geoTiffToRaw
 } from './steps/gdal.js';
 import mkdirSafe from '../../utils/mkdirSafe.js';
+import { tools } from '../../tools/index.js';
 
 const SATELLITE_SOURCES = [
   'google',
   // 'bing'
 ];
-// const innerResolution = 1.0; // 50 cm
-// const outerResolution = 1.0; // 1m
 
 const JobStates = {
   Queued: 'queued',
@@ -35,15 +34,19 @@ const JobStates = {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 export class Job extends EventEmitter {
-  constructor(data, outputDirectory) {
+  constructor(data, outputFolder) {
     super();
     this.id = randomUUID();
     this.data = data;
     this.assets = [];
     this.progress = { step: 'created', label: 'Waiting for job to start' };
     this.state = JobStates.Queued;
+
+    if (outputFolder) {
+      this.data.outputFolder = outputFolder;
+    }
     // this.created = new Date();
-    this.terrainDirectory = outputDirectory || process.env.TERRAIN_DIR;
+    // this.terrainDirectory = outputDirectory || process.env.TERRAIN_DIR
   }
 
   update() {
@@ -62,30 +65,33 @@ export class Job extends EventEmitter {
     // const localFiles = await downloadBatchUrls();
     try {
       // safety check
-      if (!this.terrainDirectory) {
-        throw new Error('Missing Terrain directory. Was the TERRAIN_DIR environment variable set?');
+      if (!this.data.outputFolder) {
+        throw new Error('Missing outputDirectory. Unable to continue');
       }
-      if (!fs.existsSync(this.terrainDirectory)) {
-        throw new Error(`Terrain directory does not exist: ${this.terrainDirectory}`);
+      this.courseDirectory = this.data.outputFolder;
+      console.log('this.courseDirectory', this.courseDirectory);
+      if (fs.existsSync(this.courseDirectory)) {
+        throw new Error(`Course directory already exists! ${this.courseDirectory}`);
       }
+      mkdirSafe(this.courseDirectory);
+
       this.state = JobStates.Running;
       // setup base course directory
-      this.courseDirectory = path.join(this.terrainDirectory, this.data.course);
-      if (fs.existsSync(this.courseDirectory) && process.env.TEST_JOB !== '1') {
-        throw new Error('A course folder with this name already exists!');
-      }
-      console.log(`Creating new course directory: ${this.courseDirectory}`);
-      mkdirSafe(this.courseDirectory);
+      // if (fs.existsSync(this.courseDirectory) && process.env.TEST_JOB !== '1') {
+      //   throw new Error('A course folder with this name already exists!');
+      // }
+      // console.log(`Creating new course directory: ${this.courseDirectory}`);
+      // mkdirSafe(this.courseDirectory);
 
       this.progress = { step: 'download', label: 'Downloading lidar data', percent: 0 };
       this.update();
+      console.log(this.courseDirectory);
+      console.log(tools);
 
       if (!this.data.dataSource?.format) {
         throw new Error('Missing valid data source format!');
       }
 
-
-      
       this.progress = { step: 'download', label: 'Preparing to download lidar data' };
       this.update();
 
@@ -111,9 +117,9 @@ export class Job extends EventEmitter {
       let outerTiff;
       let outerStats;
 
-      
+
       if (this.data.dataSource?.format === 'LAZ') {
-        
+
         // create download directory
         const lazDataDirectory = path.join(this.courseDirectory, 'LAS');
         mkdirSafe(lazDataDirectory);
@@ -128,10 +134,10 @@ export class Job extends EventEmitter {
 
         this.progress = { step: 'raw', label: 'Preparing GeoTIFFs...' };
         this.update();
-  
+
         const tiffDirectory = path.join(this.courseDirectory, 'GeoTIFF');
         mkdirSafe(tiffDirectory);
-        
+
         this.progress = { step: 'process', label: 'Converting lidar data to inner GeoTIFF', secondary: 'This step may take a while' };
         this.update();
 
@@ -144,7 +150,7 @@ export class Job extends EventEmitter {
         if (this.data.coordinates.outer.length) {
           this.progress = { step: 'process', label: 'Converting lidar data to outer GeoTIFF', secondary: 'This step may take a while' };
           this.update();
-  
+
           // convert LAZ files to TIFF
           const outerLaz = await this.laz(mergedLaz, 'outer', this.data.resolution.outer, tiffDirectory); // this.data.coordinates.outer
           outerStats = outerLaz.stats;
@@ -167,9 +173,9 @@ export class Job extends EventEmitter {
       await geoTiffToRaw(innerTiff, innerStats);
 
       if (outerTiff && outerStats) {
-        this.progress = { step: 'raw', label: `Generating outer height map (2 of 2)` };
+        this.progress = { step: 'raw', label: 'Generating outer height map (2 of 2)' };
         this.update();
-          // create outer raw terrain
+        // create outer raw terrain
         await geoTiffToRaw(outerTiff, outerStats);
       }
 
@@ -197,16 +203,16 @@ export class Job extends EventEmitter {
           this.update();
         }
       }
-      
+
       // generate hillshade image for inner
       this.progress = { step: 'hillshade', label: 'Generating hillshade images' };
       this.update();
       const hillshade = await geoTIFFHillShade(innerTiff, overlaysDirectory);
-            
+
       if (innerStats) {
         this.progress = { step: 'csv', label: 'Generating CSV file' };
         this.update();
-  
+
         const csvFilePath = path.join(this.courseDirectory, 'MinMax.csv');
         await generateCSV(this.data, innerStats, outerStats, csvFilePath);
         this.assets.push(csvFilePath);
@@ -241,9 +247,9 @@ export class Job extends EventEmitter {
       geoTiff: filledGeoTiff
     }
   }
-  
+
   async processOuter() {
-    
+
   }
 
 }
@@ -254,7 +260,7 @@ export class JobQueue extends EventEmitter {
     this.queue = [];
     this.activeJob = undefined;
   }
-  
+
   getJob(jobId) {
     return this.queue.find(job => job.id === jobId);
   }
@@ -267,62 +273,25 @@ export class JobQueue extends EventEmitter {
   }
 
   checkQueue() {
-    if (!!this.activeJob) {
+    if (this.activeJob) {
       return;
     }
     const [nextJob] = this.queue.filter(job => job.state === JobStates.Queued);
     if (nextJob) {
       this.activeJob = nextJob;
       this.runJob();
-    }    
+    }
   }
 
   async runJob() {
     if (!this.activeJob) {
       return;
     }
-//   // await batchDownload();
+    //   // await batchDownload();
     await this.activeJob.process();
     // await sleep(5000);
     this.activeJob = undefined;
-//   isRunning = false;
+    //   isRunning = false;
 
   }
 }
-
-// export function create(data) {
-//   const job = {
-//     id: randomUUID(),
-//     submitted: Date.now(),
-//     state: JobStates.Queued,
-//     data
-//   };
-//   jobQueue.set(job.id, job);
-
-//   runNextInQueue();
-// }
-
-// function runNextInQueue() {
-//   if (isRunning) {
-//     return;
-//   }
-//   const queuedJobs = jobQueue
-//     .values()
-//     .filter(job => job.state === JobStates.Queued)
-//     // order by submitted time
-//     .sort((a, b) => a.submitted < b.submitted ? -1 : 1)
-//   const [nextJob] = queuedJobs;
-//   if (nextJob) {
-//     isRunning = true;
-//     runJob(nextJob)
-//   }
-// }
-
-// const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-// function runJob(job) {
-//   console.log('running job!', nextJob);
-//   // await batchDownload();
-//   await sleep(2000);
-//   isRunning = false;
-//   // runNextInQueue();
-// }

@@ -3,19 +3,34 @@ import path from 'path';
 import { promisify } from 'util';
 import { spawn, exec, execSync } from 'child_process';
 import os from 'os';
+import { tools } from '../../../tools/index.js';
 
 import mkdirSafe from '../../../utils/mkdirSafe.js';
 
 const execAsync = promisify(exec);
 
 function runPipelineCommand(pipelineData) {
+
+  const [bin, ...args] = tools.gdal.type === 'conda' ? [
+    tools.conda,
+    'run',
+    // allows us to write to stdin
+    '--no-capture-output',
+    '-p', tools.condaEnv,
+    'pdal'
+  ] : [
+    tools.pdal
+  ];
+
+  console.log('pdal-run', bin, args);
   return new Promise((resolve, reject) => {
-    const child = spawn('pdal', [
+    const child = spawn(bin, [
+      ...args,
       'pipeline',
-      '--verbose=8',
+      // '--verbose=8',
       // `--progress=${fifo}`,
       '--stdin'
-    ]);  
+    ]);
     child.stderr.on('data', data => {
       console.log(`stderr: ${data}`);
     });
@@ -35,20 +50,20 @@ function runPipelineCommand(pipelineData) {
   });
 }
 
-async function makefifo() {
-  const fifoName = 'pdal_progress_pipe';
-  // const fifoName = `pdal_progress_${Date.now().toString(16)}`;
-  // const fifoDir = path.join(os.tmpdir(), 'pdal_progress');
-  // console.log(`Creating fifo dir at ${fifoDir}`);
-  // mkdirSafe(fifoDir);
-  const fifoPath = path.resolve('../_tmp', fifoName);
-  console.log(`Creating fifo at ${fifoPath}`);
-  if (fs.existsSync(fifoPath)) {
-    fs.unlinkSync(fifoPath);
-  }
-  await execSync(`mkfifo ${fifoPath}`);
-  return fifoPath;
-}
+// async function makefifo() {
+//   const fifoName = 'pdal_progress_pipe';
+//   // const fifoName = `pdal_progress_${Date.now().toString(16)}`;
+//   // const fifoDir = path.join(os.tmpdir(), 'pdal_progress');
+//   // console.log(`Creating fifo dir at ${fifoDir}`);
+//   // mkdirSafe(fifoDir);
+//   const fifoPath = path.resolve('../_tmp', fifoName);
+//   console.log(`Creating fifo at ${fifoPath}`);
+//   if (fs.existsSync(fifoPath)) {
+//     fs.unlinkSync(fifoPath);
+//   }
+//   await execSync(`mkfifo ${fifoPath}`);
+//   return fifoPath;
+// }
 /**
  * Merges multiple LAZ/LAS files into a single merged LAZ
  */
@@ -59,7 +74,7 @@ export async function mergeLaz(items, coordinates, outputDirectory) {
     throw new Error('No local point cloud files found!');
   }
   const lazOutputFile = path.join(outputDirectory, 'merged_laz_outer.las');
-  
+
   // crop area
   const cropWKT = `POLYGON ((${coordinates.map(coord => coord.join(' ')).join(', ')}))`;
 
@@ -129,7 +144,7 @@ export async function mergeLaz(items, coordinates, outputDirectory) {
     // readStream.on('close', () => {
     //   console.log(`fifo closed`);
     // });
-  
+
     child.stderr.on('data', data => {
       console.log(`stderr: ${data}`);
     });

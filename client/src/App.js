@@ -6,7 +6,8 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Map from './Map';
 import Toolbar from './Toolbar';
 import Sidebar from './Sidebar';
-import { AppBar, Typography } from '@mui/material';
+import { AppBar, CircularProgress, Typography } from '@mui/material';
+import InstallerDialog from './InstallerDialog';
 
 const theme = createTheme({
   palette: {
@@ -32,13 +33,17 @@ export default function App() {
   const [outerDistance, setOuterDistance] = useState();
   const [coordinates, setCoodinates] = useState();
   const [isOuterEnabled, setIsOuterEnabled] = useState(false);
+  const [isDependencyCheckPending, setIsDependencyCheckPending] = useState(true);
+  const [hasRequiredDependencies, setHasRequiredDependencies] = useState(false);
+  const [installerDialogOpen, setInstallerDialogOpen] = useState(false);
+
   // const [isOpen, setIsOpen] = useState(false);
 
   const handleDistanceChanged = useCallback((distance) => {
     console.log('handleDistanceChanged', distance);
     setDistance(distance);
   }, []);
-  
+
   const handleOuterChanged = useCallback((distance) => {
     console.log('handleOuterChanged', distance);
     setOuterDistance(distance);
@@ -61,53 +66,79 @@ export default function App() {
     console.log('handleCoordinatesChange', coordinates);
     setCoodinates(coordinates);
   };
-
+  const handleInstallerDialogClose = () => {
+    setInstallerDialogOpen(false);
+  }
 
   useEffect(() => {
-    console.log('app rendered');
+    window.courseterrain.verifyDependencies().then((report) => {
+      console.log('passed', report);
+      if (!report.passed) {
+        setInstallerDialogOpen(true);
+      }
+      setHasRequiredDependencies(report.passed);
+      setIsDependencyCheckPending(false);
+    }).catch(error => {
+      console.log(error);
+      alert('Unable to verify required tools!');
+      window.courseterrain.quitApp();
+    });
   }, []);
-  
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <AppBar position="relative" sx={{ flexGrow: 0, p: 1, display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
-          <Box sx={{ flex: 1, ml: 1 }}>
-            <Typography>Course Terrain Tool</Typography>
-          </Box>
-          <Box>
-            <Toolbar
-              coordinates={coordinates}
-              onToggleEditMode={toggleMapEditMode}
-              onMapChange={handleMapChange}
-            />
-          </Box>
-        </AppBar>
-        <Box sx={{ display: 'flex', flexGrow: 1, gap: 3 }}>
-          <Box sx={{ width: 300 }}>
-            <Sidebar
-              coordinates={coordinates}
-              distance={distance}
-              outerDistance={outerDistance}
-              dataSource={dataSource}
-              onDistanceChange={handleDistanceChanged}
-              onOuterChanged={handleOuterChanged}
-              onDataSourceChanged={handleDataSourceChanged}
-            />
-          </Box>
-          <Box sx={{ flexGrow: 1 }}>
-            <Map
-              distance={distance}
-              outerDistance={outerDistance}
-              isOuterEnabled={isOuterEnabled}
-              dataSource={dataSource}
-              mapStyle={mapStyle}
-              mapEditMode={mapEditMode}
-              onCoordinatesChanged={handleCoordinatesChange}
-            />
+      {isDependencyCheckPending ? (
+        <Box sx={{
+          width: '100vw',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <CircularProgress size={75} />
+        </Box>
+      ) : (
+        <Box sx={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <AppBar position="relative" sx={{ flexGrow: 0, p: 1, display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
+            <Box sx={{ flex: 1, ml: 1 }}>
+              <Typography>Course Terrain Tool</Typography>
+            </Box>
+            <Box>
+              <Toolbar
+                coordinates={coordinates}
+                onToggleEditMode={toggleMapEditMode}
+                onMapChange={handleMapChange}
+              />
+            </Box>
+          </AppBar>
+          <Box sx={{ display: 'flex', flexGrow: 1, gap: 3 }}>
+            <Box sx={{ width: 300 }}>
+              <Sidebar
+                coordinates={coordinates}
+                distance={distance}
+                outerDistance={outerDistance}
+                dataSource={dataSource}
+                onDistanceChange={handleDistanceChanged}
+                onOuterChanged={handleOuterChanged}
+                onDataSourceChanged={handleDataSourceChanged}
+              />
+            </Box>
+            <Box sx={{ flexGrow: 1 }}>
+              <Map
+                distance={distance}
+                outerDistance={outerDistance}
+                isOuterEnabled={isOuterEnabled}
+                dataSource={dataSource}
+                mapStyle={mapStyle}
+                mapEditMode={mapEditMode}
+                onCoordinatesChanged={handleCoordinatesChange}
+              />
+            </Box>
           </Box>
         </Box>
-      </Box>
+      )}
+      <InstallerDialog open={installerDialogOpen} onClose={handleInstallerDialogClose} />
     </ThemeProvider>
   );
 }

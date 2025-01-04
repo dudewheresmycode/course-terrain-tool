@@ -1,6 +1,6 @@
 name: build/electron
 run-name: Building and releasing electron app 🚀
-on: [push, pull_request]
+on: push
 
 jobs:
   release:
@@ -22,7 +22,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c 1-8)" >> $env:GITHUB_ENV
 
-      - name: Check out Git repository
+      - name: Check out repository
         uses: actions/checkout@v1
 
       - name: Install Node.js, NPM and Yarn
@@ -32,8 +32,10 @@ jobs:
 
       - name: "npm install"
         run: npm install
+
       - name: "npm build"
         run: npm run build
+
       - name: "electron-builder"
         run: npx electron-builder --publish never
 

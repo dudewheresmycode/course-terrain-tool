@@ -1,19 +1,21 @@
 // Modules to control application life and create native browser window
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import express from 'express';
 
 import './utils/startup.js';
 import { app as server } from './server/index.js';
-import { verifyDependencies } from './conda/installer.js';
+import { verifyDependencies } from './tools/index.js';
+import { installDependencies } from './tools/installer.js';
 
 const PORT = process.env.PORT || 3133;
 
-function createWindow () {
+function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 700,
+    backgroundColor: '#222222',
     webPreferences: {
       preload: path.resolve(app.getAppPath(), './app/preload.js'),
       // nodeIntegrationInWorker: true,
@@ -24,24 +26,25 @@ function createWindow () {
 
   // and load the index.html of the app.
   // mainWindow.loadFile(path.join(process.cwd(), 'index.html'))
-  if (process.env.CLIENT_DEV_MODE) {
-    // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
-    mainWindow.loadURL('http://localhost:3030');
-  } else {
-    mainWindow.loadURL('http://localhost:3133');
-  }
-
+  // if (process.env.NODE_ENV === 'production') {
+  //   // mainWindow.loadFile(path.join(process.cwd(), '../client/dist/index.html'))
+  //   mainWindow.loadURL('http://localhost:3030');
+  // } else {
+  //   mainWindow.loadURL('http://localhost:3133');
+  // }
+  const isDevServer = process.argv.includes('devserver');
+  console.log('running in dev mode');
+  const PORT = isDevServer ? 3030 : 3133;
+  mainWindow.loadURL(`http://localhost:${PORT}`);
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  
-  await verifyDependencies();
-  
+
   await startServer();
 
   createWindow();
@@ -52,11 +55,31 @@ app.whenReady().then(async () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 
-  ipcMain.handle('linkout', (event, location) => {
+  ipcMain.on('install-tools', async (event) => {
+    event.sender.send('install-progress', { text: 'Setting up installation' });
+    await installDependencies(event.sender);
+  });
+  ipcMain.handle('dependency-check', async (event) => {
+    return verifyDependencies();
+  });
+  ipcMain.handle('link-out', (event, location) => {
     console.log(location);
     shell.openExternal(location);
   });
-
+  ipcMain.handle('select-folder', async () => {
+    const folder = await dialog.showSaveDialog({
+      title: 'Create Course Folder',
+      nameFieldLabel: 'Course Name',
+      // defaultPath: app.getPath('home'),
+      message: 'Select the location to create your course folder',
+      buttonLabel: 'Create Course Folder',
+      // properties: ['openDirectory', 'createDirectory', 'promptToCreate']
+    });
+    return folder;
+  });
+  ipcMain.handle('quit-app', (event) => {
+    app.quit();
+  });
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -71,20 +94,12 @@ app.on('window-all-closed', function () {
 
 function startServer() {
   return new Promise(resolve => {
-    
-    // server.get('/preload.js', (req, res) => res.sendFile(path.join(process.cwd(), './preload.js')));
     const distPath = path.resolve(app.getAppPath(), './client/dist');
-    console.log('distPath', distPath);
     server.use(express.static(distPath));
     server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
 
     server.listen(PORT, () => {
-      // we set CTC_DEBUG when we run the app in develop mode and 
-      // proxy the server behind the webpack dev server
-      // so we hide this log message to avoid confusion about which address the user sees
-      if (!process.env.CTC_DEBUG) {
-        console.log(`Server running at http://localhost:${PORT}`);
-      }
+      console.log(`Server running at http://localhost:${PORT}`);
       resolve();
     });
   });
