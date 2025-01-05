@@ -142,7 +142,7 @@ export class MergeLAZTask extends BaseTask {
           // Classification 11 = Road
           // Source: https://desktop.arcgis.com/en/arcmap/latest/manage-data/las-dataset/lidar-point-classification.htm
           limits: [
-            'Classification[1:1]', // Unclassified
+            // 'Classification[1:1]', // Unclassified
             'Classification[1.1:2.1]', // Ground
             'Classification[8.1:9.1]', // Water
             'Classification[10.1:11.1]', // Road
