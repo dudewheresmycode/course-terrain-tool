@@ -229,6 +229,7 @@ export class GenerateSatelliteImageryTask extends BaseTask {
 export class GenerateHillShadeImageTask extends BaseTask {
   constructor({ outputDirectory }) {
     super();
+    this.label = 'Generating inner hill shade image';
     this.outputDirectory = outputDirectory;
   }
 

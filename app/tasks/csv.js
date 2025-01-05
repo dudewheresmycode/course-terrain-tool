@@ -26,6 +26,7 @@ function formatValues(value) {
 export class CreateCSVTask extends BaseTask {
   constructor({ outputDirectory }) {
     super();
+    this.label = 'Creating CSV file with min/max values';
     this.outputDirectory = outputDirectory;
   }
 

@@ -38,3 +38,25 @@ We're continually working on adding new sources to this list. If you have a spec
 
 > [!WARNING]
 > Note: Installing the required tools in-app using `conda-forge` requires about 5GB of free disk space. We're working on trying to compile custom, smaller versions of PDAL and GDAL directly and bundle them in the app or installer. But until then, you'll can either [manually install PDAL and GDAL](https://ctt.opengolfsim.com/Dependencies#manually-install-tools) yourself, or use the wizard within the app to install them.
+
+
+### Logs
+
+To help debug, sometimes we'll ask for logs. These can be found at the following paths:
+
+- Windows: `%USERPROFILE%\AppData\Roaming\Course Terrain Tool\logs`
+- Mac: `~/Library/Logs/Course Terrain Tool`
+
+#### Tailing logs
+
+If you want to see live logs as the app runs, you can enter the following command:
+
+On Windows:
+```powershell
+Get-Content "$env:USERPROFILE\AppData\Roaming\Course Terrain Tool\logs\main.log" -Wait -Tail 30
+```
+
+On Mac:
+```bash
+tail -f "$HOME/Library/Logs/Course Terrain Tool/main.log"
+```
