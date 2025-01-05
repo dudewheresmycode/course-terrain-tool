@@ -65,7 +65,7 @@ function InstallerContent(props) {
         <DialogContentText>
           Course Terrain Tool depends on a couple libraries to process the LiDAR and TIFF files.
           For your convenience we can install these for you using this setup wizard, or you can manually install these tools yourself.
-          For more information checkout the <LinkOut href="https://github.com/dudewheresmycode/course-terrain-tool/blob/main/docs/Dependencies.md" target="_blank">Documentation</LinkOut>.
+          For more information checkout the <LinkOut href="https://ctt.opengolfsim.com/libraries" target="_blank">Documentation</LinkOut>.
         </DialogContentText>
         <DialogContentText sx={{ mt: 2, mb: 4 }}>
           The following libraries are required:
