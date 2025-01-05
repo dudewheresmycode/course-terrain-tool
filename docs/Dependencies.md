@@ -40,20 +40,6 @@ Windows:
 
 Then relaunch the CTT application.
 
-### Application Logs
-
-Please include full logs with any issues ou file. The CTT application logs can be found at the following locations:
-
-Mac OS:
-```
-~/Library/Logs/course-terrain-tool/main.log
-```
-
-Windows:
-```
-%USERPROFILE%\AppData\Roaming\course-terrain-tool\logs\main.log
-```
-
 
 Please report any bugs/issues on our [issues page](https://github.com/dudewheresmycode/course-terrain-tool/issues/new?title=Bug%20Report:%20)
 
@@ -80,17 +66,12 @@ I've not installed GDAL or PDAL directly on Windows yet myself, so I can't reall
 
 First install Conda or Miniconda using one of their [installation methods](https://docs.conda.io/projects/conda/en/latest/user-guide/install/windows.html).
 
-Then install GDAL
+Then install GDAL and PDAL
 
 ```bash
-conda install -c conda-forge gdal
+conda install -c conda-forge gdal pdal
 ```
 
-and PDAL
-
-```bash
-conda install -c conda-forge pdal
-```
 
 Sources
 
