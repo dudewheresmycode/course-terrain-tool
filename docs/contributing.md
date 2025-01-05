@@ -1,9 +1,9 @@
 ---
-title: Required Libraries
+title: Contributing
 nav_order: 3
 ---
 
-# Development
+# Contributing
 
 If you'd like to contribute to the development of this app, below you'll find instructions on how to checkout the source and run the project locally. Feel free to open a pull request!
 
