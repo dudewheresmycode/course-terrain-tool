@@ -158,6 +158,7 @@ export function buildMenu(webContents) {
     {
       role: 'help',
       submenu: [
+        ...isMac ? [{ role: 'about', }] : [],
         {
           label: 'Help',
           click: async () => {

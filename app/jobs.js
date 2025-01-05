@@ -81,153 +81,145 @@ export class Job extends EventEmitter {
   }
 
   async process() {
+    // safety checks
+    if (!this.data.outputFolder) {
+      throw new Error('Missing outputDirectory. Unable to continue');
+    }
+    if (!this.data.dataSource?.format) {
+      throw new Error('Missing valid data source format!');
+    }
 
-    try {
-      // safety checks
-      if (!this.data.outputFolder) {
-        throw new Error('Missing outputDirectory. Unable to continue');
-      }
-      if (!this.data.dataSource?.format) {
-        throw new Error('Missing valid data source format!');
-      }
+    this.courseDirectory = this.data.outputFolder;
+    log.info(`Using course directory: ${this.courseDirectory}`);
 
-      this.courseDirectory = this.data.outputFolder;
-      log.info(`Using course directory: ${this.courseDirectory}`);
-
-      this.state = JobStates.Running;
-      const downloadDirectory = path.join(this.courseDirectory, 'Downloads');
-      const lazDataDirectory = path.join(this.courseDirectory, 'LAS');
-      const rawDataDirectory = path.join(this.courseDirectory, 'RAW');
-      const tiffDirectory = path.join(this.courseDirectory, 'TIFF');
-      const overlaysDirectory = path.join(this.courseDirectory, 'Overlays');
+    this.state = JobStates.Running;
+    const downloadDirectory = path.join(this.courseDirectory, 'Downloads');
+    const lazDataDirectory = path.join(this.courseDirectory, 'LAS');
+    const rawDataDirectory = path.join(this.courseDirectory, 'RAW');
+    const tiffDirectory = path.join(this.courseDirectory, 'TIFF');
+    const overlaysDirectory = path.join(this.courseDirectory, 'Overlays');
 
 
-      const isLAZInput = this.data.dataSource?.format === 'LAZ';
-      // const isTIFFInput = this.data.dataSource?.format === 'GeoTIFF';
-      const isOuterEnabled = this.data.coordinates.outer?.length;
+    const isLAZInput = this.data.dataSource?.format === 'LAZ';
+    // const isTIFFInput = this.data.dataSource?.format === 'GeoTIFF';
+    const isOuterEnabled = this.data.coordinates.outer?.length;
 
-      const cropCoordinates = isOuterEnabled ? this.data.coordinates.outer : this.data.coordinates.inner;
+    const cropCoordinates = isOuterEnabled ? this.data.coordinates.outer : this.data.coordinates.inner;
 
-      const taskPipeline = [
+    const taskPipeline = [
+      new CreateDirectoryTask({
+        directory: this.courseDirectory
+      }),
+      new CreateDirectoryTask({
+        directory: downloadDirectory
+      }),
+      new CreateDirectoryTask({
+        directory: tiffDirectory
+      }),
+      isLAZInput && new CreateDirectoryTask({
+        directory: lazDataDirectory
+      }),
+
+      new DownloadTask({
+        // sources: this.data.dataSource.items,
+        downloadDirectory
+      }),
+
+      ...isLAZInput ? [
+        new MergeLAZTask({
+          // items: this.data.dataSource.items,
+          coordinates: cropCoordinates,
+          outputDirectory: lazDataDirectory
+        }),
+        // const tiff = await lazToTiff(mergedPointCloud, filenamePrefix, resolution, outputDirectory, coordinates);
+        new RasterizeLAZTask({
+          prefix: 'inner',
+          resolution: this.data.resolution.inner,
+          outputDirectory: tiffDirectory,
+          coordinates: this.data.coordinates.inner
+        }),
+        new GeoTiffFillNoDataTask({
+          prefix: 'inner',
+          resolution: this.data.resolution.inner,
+          outputDirectory: tiffDirectory
+        }),
+
+        new GeoTiffStatsTask({ prefix: 'inner' }),
+
         new CreateDirectoryTask({
-          directory: this.courseDirectory
+          directory: rawDataDirectory
         }),
-        new CreateDirectoryTask({
-          directory: downloadDirectory
-        }),
-        new CreateDirectoryTask({
-          directory: tiffDirectory
-        }),
-        isLAZInput && new CreateDirectoryTask({
-          directory: lazDataDirectory
+        new GeoTiffToRaw({
+          prefix: 'inner',
+          outputDirectory: rawDataDirectory
         }),
 
-        new DownloadTask({
-          // sources: this.data.dataSource.items,
-          downloadDirectory
+        new CreateDirectoryTask({
+          directory: overlaysDirectory
+        }),
+        new GenerateSatelliteImageryTask({
+          prefix: 'inner',
+          outputDirectory: overlaysDirectory,
+          coordinates: this.data.coordinates.inner
         }),
 
-        ...isLAZInput ? [
-          new MergeLAZTask({
-            // items: this.data.dataSource.items,
-            coordinates: cropCoordinates,
-            outputDirectory: lazDataDirectory
-          }),
-          // const tiff = await lazToTiff(mergedPointCloud, filenamePrefix, resolution, outputDirectory, coordinates);
+        ...isOuterEnabled ? [
           new RasterizeLAZTask({
-            prefix: 'inner',
-            resolution: this.data.resolution.inner,
+            prefix: 'outer',
+            resolution: this.data.resolution.outer,
             outputDirectory: tiffDirectory,
-            coordinates: this.data.coordinates.inner
+            coordinates: this.data.coordinates.outer
           }),
           new GeoTiffFillNoDataTask({
-            prefix: 'inner',
-            resolution: this.data.resolution.inner,
+            prefix: 'outer',
+            resolution: this.data.resolution.outer,
             outputDirectory: tiffDirectory
           }),
-
-          new GeoTiffStatsTask({ prefix: 'inner' }),
-
-          new CreateDirectoryTask({
-            directory: rawDataDirectory
-          }),
+          new GeoTiffStatsTask({ prefix: 'outer' }),
           new GeoTiffToRaw({
-            prefix: 'inner',
+            prefix: 'outer',
             outputDirectory: rawDataDirectory
           }),
-
-          new CreateDirectoryTask({
-            directory: overlaysDirectory
-          }),
-          new GenerateSatelliteImageryTask({
-            prefix: 'inner',
-            outputDirectory: overlaysDirectory,
-            coordinates: this.data.coordinates.inner
-          }),
-
-          ...isOuterEnabled ? [
-            new RasterizeLAZTask({
-              prefix: 'outer',
-              resolution: this.data.resolution.outer,
-              outputDirectory: tiffDirectory,
-              coordinates: this.data.coordinates.outer
-            }),
-            new GeoTiffFillNoDataTask({
-              prefix: 'outer',
-              resolution: this.data.resolution.outer,
-              outputDirectory: tiffDirectory
-            }),
-            new GeoTiffStatsTask({ prefix: 'outer' }),
-            new GeoTiffToRaw({
-              prefix: 'outer',
-              outputDirectory: rawDataDirectory
-            }),
-          ] : [],
-
-
-          new GenerateHillShadeImageTask({
-            outputDirectory: overlaysDirectory
-          }),
-
-          new CreateCSVTask({
-            outputDirectory: this.courseDirectory
-          })
-
         ] : [],
 
-      ].filter(Boolean);
 
-      // let previousTaskOutput;
-      for (const task of taskPipeline) {
-        this.activeTask = task;
-        task.on('progress', (label, percent) => {
-          this.updateProgress({ id: task.id, label, percent });
-        });
+        new GenerateHillShadeImageTask({
+          outputDirectory: overlaysDirectory
+        }),
 
-        const started = Date.now();
-        log.info(`Running task ${task.id}`);
-        this.updateProgress({ id: task.id, label: task.label || `Running the task ${task.id}` });
-        // run task
-        await task.process(this.data);
+        new CreateCSVTask({
+          outputDirectory: this.courseDirectory
+        })
 
-        log.info(`Finished task ${task.id} in ${(started / 1000).toFixed(2)} seconds`);
+      ] : [],
 
-        if (this.state === JobStates.Canceled) {
-          break;
-        }
+    ].filter(Boolean);
+
+    // let previousTaskOutput;
+    for (const task of taskPipeline) {
+      this.activeTask = task;
+      task.on('progress', (label, percent) => {
+        this.updateProgress({ id: task.id, label, percent });
+      });
+
+      const started = Date.now();
+      log.info(`Running task ${task.id}`);
+      this.updateProgress({ id: task.id, label: task.label || `Running the task ${task.id}` });
+      // run task
+      await task.process(this.data);
+
+      log.info(`Finished task ${task.id} in ${(started / 1000).toFixed(2)} seconds`);
+
+      if (this.state === JobStates.Canceled) {
+        break;
       }
-
-      if (this.state === JobStates.Running) {
-        log.info('finished?');
-        this.emit('finished', this.data);
-      }
-
-    } catch (error) {
-      log.error(error);
-      this.error = error.message || 'Unknown error';
-      this.state = JobStates.Error;
-      this.update();
     }
+
+    if (this.state === JobStates.Running) {
+      log.info('finished?');
+      this.emit('finished', this.data);
+    }
+
   }
 
 }
@@ -272,10 +264,12 @@ export class JobQueue extends EventEmitter {
     if (!this.activeJob) {
       return;
     }
-    //   // await batchDownload();
-    await this.activeJob.process();
-    // await sleep(5000);
+    try {
+      await this.activeJob.process();
+    } catch (error) {
+      log.error(error);
+      this.activeJob.emit('error', error.message || 'An unknown error occurred. Please check the logs.');
+    }
     this.activeJob = undefined;
-    //   isRunning = false;
   }
 }

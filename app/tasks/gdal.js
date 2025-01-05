@@ -138,7 +138,7 @@ export class GeoTiffFillNoDataTask extends BaseTask {
     await runGDALCommand(GDAL_BINARIES.gdal_fillnodata, args, this.abortController.signal, onProgress);
 
     // the ol switch-a-roo
-    // await fs.promises.unlink(data._outputFiles.tiff);
+    await fs.promises.unlink(data._outputFiles.tiff);
     data._outputFiles[this.prefix].tiff = destFile;
 
   }

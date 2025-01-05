@@ -10,6 +10,8 @@ const { contextBridge, ipcRenderer } = require('electron');
  */
 
 contextBridge.exposeInMainWorld('courseterrain', {
+  isWindows: process.platform === 'win32',
+  isMac: process.platform === 'darwin',
   folderReveal: (outputFolder) => {
     return ipcRenderer.invoke('reveal-folder', outputFolder);
   },

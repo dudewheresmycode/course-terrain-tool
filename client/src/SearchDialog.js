@@ -136,7 +136,7 @@ export default function SearchDialog(props) {
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button variant="outlined" color="secondary" onClick={handleClose}>Cancel</Button>
       </DialogActions>
     </Dialog>
   )

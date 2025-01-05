@@ -113,9 +113,15 @@ app.whenReady().then(async () => {
   ipcMain.handle('submit-job', (event, jobData) => {
     const job = jobQueue.add(jobData);
     job.on('progress', progress => {
+      console.log('progress', progress);
       event.sender.send('job-progress', progress);
     });
+    job.on('error', error => {
+      console.log('error', error);
+      event.sender.send('job-error', error);
+    });
     job.on('finished', data => {
+      console.log('finished', data);
       event.sender.send('job-finished', data);
     });
   });

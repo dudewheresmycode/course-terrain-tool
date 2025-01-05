@@ -6,8 +6,10 @@ import Box from '@mui/material/Box';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import CancelIcon from '@mui/icons-material/Cancel';
 import CircularProgress from '@mui/material/CircularProgress';
-import { Chip, LinearProgress, styled, Typography } from '@mui/material';
+import { Alert, Chip, LinearProgress, styled, Typography } from '@mui/material';
 
 const StyledProgressContent = styled(DialogContent)(({ theme }) => ({
   display: 'flex',
@@ -26,23 +28,42 @@ function ProgressDialogContent(props) {
     return (
       <>
         <StyledProgressContent>
-          <CheckCircleIcon color="success" sx={{ fontSize: 40 }} />
+          <CheckCircleIcon color="success" sx={{ fontSize: 60, mb: 2 }} />
           <Typography sx={{ mb: 2 }} variant="h5">Job Complete!</Typography>
-          <Typography variant="body2">Check the shared data folder for your files.</Typography>
+          <Typography variant="body2">Check the output folder to see the generated files.</Typography>
         </StyledProgressContent>
         <DialogActions>
-          <Button onClick={props.onReveal}>Reveal Folder</Button>
-          <Button onClick={props.onDismiss}>Done</Button>
+          <Button variant="outlined" color="secondary" onClick={props.onReveal}>Reveal in {window.courseterrain?.isMac ? 'Finder' : 'File Explorer'}</Button>
+          <Button variant="contained" color="primary" onClick={props.onDismiss}>Done</Button>
         </DialogActions>
       </>
     )
   }
   if (job?.state === 'canceled') {
     return (
-      <StyledProgressContent>
-        <CheckCircleIcon color="warning" sx={{ fontSize: 40 }} />
-        <Typography sx={{ mb: 2 }} variant="h5">Job Canceled</Typography>
-      </StyledProgressContent>
+      <>
+        <StyledProgressContent>
+          <CancelIcon color="warning" sx={{ fontSize: 40 }} />
+          <Typography sx={{ mb: 2 }} variant="h5">Job Canceled</Typography>
+        </StyledProgressContent>
+        <DialogActions>
+          <Button variant="contained" color="primary" onClick={props.onDismiss}>Done</Button>
+        </DialogActions>
+      </>
+    )
+  }
+  if (props.jobError) {
+    return (
+      <>
+        <StyledProgressContent>
+          <ErrorIcon color="error" sx={{ fontSize: 40 }} />
+          <Typography sx={{ mb: 2 }} variant="h5">Something went wrong!</Typography>
+          <Alert sx={{ width: '100%' }} severity="error">Details: <strong>{props.jobError}</strong></Alert>
+        </StyledProgressContent>
+        <DialogActions>
+          <Button variant="contained" color="primary" onClick={props.onDismiss}>Done</Button>
+        </DialogActions>
+      </>
     )
   }
   return (

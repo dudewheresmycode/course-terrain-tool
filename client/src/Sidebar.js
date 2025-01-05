@@ -49,6 +49,7 @@ export default function Sidebar(props) {
   const [courseName, setCourseName] = useState('');
   const [outputFolder, setOutputFolder] = useState('');
   const [isJobFinished, setIsJobFinished] = useState(false);
+  const [jobError, setJobError] = useState();
   const [tifResolution, setTifResolution] = useState(0.5); // default is 40 cm
   const [tifResolutionOuter, setTifResolutionOuter] = useState(1); // default is 2m
 
@@ -187,6 +188,9 @@ export default function Sidebar(props) {
   const handleJobFinished = () => {
     setIsJobFinished(true);
   }
+  const handleJobError = (_, error) => {
+    setJobError(error);
+  }
 
   useEffect(() => {
     // const wsHost = window.location.host ? window.location.host : 'localhost:3133';
@@ -202,10 +206,12 @@ export default function Sidebar(props) {
     // const wsCurrent = ws.current;
     window.courseterrain.addEventListener('job-progress', handleJobProgress);
     window.courseterrain.addEventListener('job-finished', handleJobFinished);
+    window.courseterrain.addEventListener('job-error', handleJobError);
 
     return () => {
       window.courseterrain.removeEventListener('job-progress', handleJobProgress);
       window.courseterrain.removeEventListener('job-finished', handleJobFinished);
+      window.courseterrain.removeEventListener('job-finished', handleJobError);
       // console.log('hangup...');
       // ws.current.removeEventListener('open', handleSocketOpened);
       // ws.current.removeEventListener('close', handleSocketClosed);
@@ -393,6 +399,7 @@ export default function Sidebar(props) {
         open={progressDialogOpen}
         jobState={currentJobState}
         isFinished={isJobFinished}
+        jobError={jobError}
         onReveal={handleFolderReveal}
         onDismiss={handleDialogDismiss}
         onCancel={handleJobCancel}
