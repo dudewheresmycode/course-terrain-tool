@@ -17,8 +17,9 @@ const MapElement = styled(Box)({
   }
 });
 
-const MAP_START_POINT = [-122.49245658909646, 37.70908156067745]; // SanFran
-// const MAP_START_POINT = [-105.0483, 40.53461]; // Foco
+const MAP_START_POINT = [-95.231830, 39.176370]; // random center of US
+const MAP_START_ZOOM = 4;
+
 const INNER_ID = 'inner_bounds';
 const INNER_ID_FILL = 'inner_bounds_f';
 const INNER_ID_OUTLINE = 'inner_bounds_o';
@@ -383,7 +384,7 @@ export default function Map(props) {
         boxZoom: false,
         container: mapElement.current, // container ID
         center: MAP_START_POINT, // starting position [lng, lat]. Note that lat must be set between -90 and 90
-        zoom: 10 // starting zoom
+        zoom: MAP_START_ZOOM // starting zoom
       });
       mapInstance.current.addControl(new MapboxGeocoder({
         accessToken: mapboxgl.accessToken,
