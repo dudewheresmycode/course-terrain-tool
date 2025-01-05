@@ -1,7 +1,8 @@
 {
   "name": "course-terrain-tool",
-  "version": "0.0.8",
-  "description": "Course Terrain Tool",
+  "productName": "Course Terrain Tool",
+  "version": "0.0.9",
+  "description": "An open source tool to find and process terrain data for use in the OPCD golf course design process",
   "author": {
     "name": "dudewheresmycode",
     "email": "dudewheresmycode@users.noreply.github.com"
@@ -12,7 +13,6 @@
   "type": "module",
   "main": "app/main.js",
   "build": {
-    "productName": "Course Terrain Tool",
     "icon": "./resources/icon.icns",
     "appId": "com.opengolfsim.ctt",
     "mac": {
