@@ -1,6 +1,9 @@
 ---
 title: Required Libraries
+nav_order: 1
 ---
+
+# Required Libraries
 
 Course Terrain Tool (CTT) depends on a couple libraries to process the LiDAR data and satellite imagery. You can install these yourself before launching CTT, or we'll prompt you to automatically install them using our automated install process.
 
