@@ -14,7 +14,9 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Avatar from '@mui/material/Avatar';
 import ImageIcon from '@mui/icons-material/Image';
 import PolylineIcon from '@mui/icons-material/Polyline';
-import { Chip, styled } from '@mui/material';
+import { styled } from '@mui/material';
+import Chip from '@mui/material/Chip';
+import Badge from '@mui/material/Badge';
 
 const StyledListItem = styled(ListItem)({
   padding: 0,
@@ -22,6 +24,8 @@ const StyledListItem = styled(ListItem)({
     paddingLeft: '1.5rem'
   }
 });
+
+const OGSApiEndpoint = 'https://api.opengolfsim.com';
 
 function SearchResultItem(props) {
   const handleSelectSource = useCallback(async () => {
@@ -32,19 +36,21 @@ function SearchResultItem(props) {
   return (
     <StyledListItem>
       <ListItemButton onClick={handleSelectSource}>
-        <ListItemAvatar>
-          <Avatar>
-            {props.result.format === 'LAZ' ? <PolylineIcon /> : <ImageIcon />}
-          </Avatar>
+        <ListItemAvatar sx={{ mr: 2 }}>
+          <Badge badgeContent={props.result.items.length} color="primary">
+            <Avatar>
+              {props.result.format === 'LAZ' ? <PolylineIcon /> : <ImageIcon />}
+            </Avatar>
+          </Badge>
         </ListItemAvatar>
         <ListItemText
-          primary={`${props.result.format} (${props.result.items.length})`}
-          secondary={`${props.result.group}, Published: ${props.result.publicationDate}`}
+          primary={`${props.result.group}`}
+          secondary={`${props.result.items.length} ${props.result.format} files, Published: ${props.result.publicationDate}`}
         />
-        {props.result.format === 'LAZ' ? <Chip label="Recommended" />  : null}
+        <Chip label={props.result.source} />
       </ListItemButton>
     </StyledListItem>
-  )  
+  )
 }
 
 export default function SearchDialog(props) {
@@ -87,14 +93,15 @@ export default function SearchDialog(props) {
       polygon: coords.map(points => points.join(' ')).join(','),
       center: props.coordinates.center
     });
-    const data = await fetch(`/api/search?${params}`).then(res => res.json());
+
+    const data = await fetch(`${OGSApiEndpoint}/lidar/search?${params}`).then(res => res.json());
     console.log(data);
     if (data) {
       setResults(data);
     }
     setIsPending(false);
   }, [props.coordinates]);
-  
+
   useEffect(() => {
     if (props.open && props.coordinates) {
       console.log('fetch!');
@@ -115,15 +122,15 @@ export default function SearchDialog(props) {
       <DialogTitle id="alert-dialog-title">
         {"Elevation Data Results"}
       </DialogTitle>
-      <DialogContent sx={{px: 0}}>
+      <DialogContent sx={{ px: 0 }}>
         {isPending ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>
         ) : (
           <List>
             {results ? results.map(
-              (result, index) => 
+              (result, index) =>
                 <SearchResultItem onSelect={props.onSelect} result={result} key={index} />
-              ) : null
+            ) : null
             }
           </List>
         )}

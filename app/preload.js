@@ -10,6 +10,15 @@ const { contextBridge, ipcRenderer } = require('electron');
  */
 
 contextBridge.exposeInMainWorld('courseterrain', {
+  folderReveal: (outputFolder) => {
+    return ipcRenderer.invoke('reveal-folder', outputFolder);
+  },
+  submitJob: (jobData) => {
+    return ipcRenderer.invoke('submit-job', jobData);
+  },
+  cancelJob: () => {
+    return ipcRenderer.invoke('cancel-job');
+  },
   verifyDependencies: async () => {
     return ipcRenderer.invoke('dependency-check');
   },

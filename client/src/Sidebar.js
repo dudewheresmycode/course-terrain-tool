@@ -19,6 +19,8 @@ import ProgressDialog from './ProgressDialog';
 import { Alert, Checkbox, FormHelperText, TextField } from '@mui/material';
 import RangeInput from './RangeInput';
 
+// TODO: replace websocket with IPC from electron!
+
 function ResolutionMath(props) {
   return (
     <FormHelperText component="div" error={props.size > 8000}>
@@ -45,7 +47,8 @@ export default function Sidebar(props) {
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [currentJobState, setJobState] = useState(null);
   const [courseName, setCourseName] = useState('');
-  const [courseNameError, setCourseNameError] = useState('');
+  const [outputFolder, setOutputFolder] = useState('');
+  const [isJobFinished, setIsJobFinished] = useState(false);
   const [tifResolution, setTifResolution] = useState(0.5); // default is 40 cm
   const [tifResolutionOuter, setTifResolutionOuter] = useState(1); // default is 2m
 
@@ -63,38 +66,21 @@ export default function Sidebar(props) {
   }, [tifResolutionOuter, props.distance, props.outerDistance]);
 
   const handleJobSubmit = useCallback(async () => {
-    // if (!courseName || /[^a-z0-9\_\-]/i.test(courseName)) {
-    //   return setCourseNameError('You must enter a valid course name (no special characters or spaces)');
-    // }
-    // setCourseNameError('');
-    let outputFolder;
-    let courseName;
-    if (window.courseterrain) {
-      const response = await window.courseterrain.selectFolder();
-      if (response.canceled) {
-        return;
-      }
-      if (response.filePath) {
-        outputFolder = response.filePath;
-      }
-    } else {
+    if (!window.courseterrain) {
       alert('Are you running this outside of electron?');
       return
-      // courseName = prompt("Enter a course name");
-      // if (!courseName) {
-      //   return;
-      // }
     }
-    if (!outputFolder) {
+    const response = await window.courseterrain.selectFolder();
+    if (response.canceled || !response.filePath) {
       return;
     }
-    console.log('outputTo', outputFolder);
+    setCourseName(response.filePath.split(/[\/\\]/g).pop());
+    setOutputFolder(response.filePath);
     setProgressDialogOpen(true);
 
     const { distance, coordinates, outerDistance } = props;
     const payload = {
-      // course: courseName,
-      outputFolder,
+      outputFolder: response.filePath,
       coordinates,
       distance,
       outerDistance,
@@ -104,25 +90,19 @@ export default function Sidebar(props) {
         outer: tifResolutionOuter
       }
     };
-    console.log('submit job', payload);
+    console.log('submitting job', payload);
 
-    if (!ws.current) {
-      // subscribe to progress updates via websocket
-      console.log('Unable to send to server');
-      setJobState({ error: 'Unable to connect to server' });
-      return;
-    }
-    ws.current.send(JSON.stringify({ event: 'submit', data: payload }));
+    window.courseterrain.submitJob(payload);
+    setIsJobFinished(false);
+    // if (!ws.current) {
+    //   // subscribe to progress updates via websocket
+    //   console.log('Unable to send to server');
+    //   setJobState({ error: 'Unable to connect to server' });
+    //   return;
+    // }
 
-    // await fetch('/api/job', {
-    //   method: 'POST',
-    //   headers: { 'content-type': 'application/json' },
-    //   body: JSON.stringify(payload)
-    // }).then(res => {
-    //   console.log('job submitted', res);
-    // }).catch(error => {
-    //   console.log('error!', error);
-    // });
+    // ws.current.send(JSON.stringify({ event: 'submit', data: payload }));
+
   }, [
     courseName,
     props.coordinates,
@@ -162,52 +142,77 @@ export default function Sidebar(props) {
     props.onDataSourceChanged(undefined);
   }, [props.coordinates]);
 
-  const handleSocketOpened = useCallback(() => {
-    console.log("ws opened!");
-    // ws.current.send(JSON.stringify({ event: 'echo', messag: 'hello from the client' }));
-    // console.log("sent!");
-  }, []);
+  const handleJobProgress = (_, progress) => {
+    console.log('job-progress', progress);
+    setJobState(progress);
+  }
+  // const handleSocketOpened = useCallback(() => {
+  //   console.log("ws opened!");
+  //   // ws.current.send(JSON.stringify({ event: 'echo', messag: 'hello from the client' }));
+  //   // console.log("sent!");
+  // }, []);
 
-  const handleSocketClosed = useCallback(() => {
-    console.log("ws closed!");
-  }, []);
+  // const handleSocketClosed = useCallback(() => {
+  //   console.log("ws closed!");
+  // }, []);
 
-  const handleMessage = useCallback(msg => {
-    console.log("ws message!", msg);
-    try {
-      const data = JSON.parse(msg.data);
-      console.log("event", data);
-      setJobState(data);
-    } catch (error) {
-      console.log(error);
+  // const handleMessage = useCallback(msg => {
+  //   console.log("ws message!", msg);
+  //   try {
+  //     const data = JSON.parse(msg.data);
+  //     console.log("event", data);
+  //     setJobState(data);
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }, []);
+
+  const handleSelectFolder = () => {
+    return window.courseterrain.selectFolder();
+  }
+  const handleFolderReveal = useCallback(() => {
+    if (!window.courseterrain) {
+      return alert('IPC Error: Are you running this outside of Electron?');
     }
-  }, []);
-  const handleSelectFolder = async () => {
-    const outputFolder = await window.courseterrain.selectFolder();
-    console.log(outputFolder);
+    window.courseterrain.folderReveal(outputFolder)
+  }, [outputFolder]);
+
+  const handleDialogDismiss = () => {
+    setProgressDialogOpen(false);
+  }
+  const handleJobCancel = async () => {
+    await window.courseterrain.cancelJob();
+    setProgressDialogOpen(false);
+  }
+  const handleJobFinished = () => {
+    setIsJobFinished(true);
   }
 
   useEffect(() => {
-    const wsHost = window.location.host ? window.location.host : 'localhost:3133';
-    ws.current = new WebSocket(`ws://${wsHost}/progress`);
-    const handleError = (error) => {
-      console.log("ws error", error);
-    }
-    ws.current.addEventListener('open', handleSocketOpened);
-    ws.current.addEventListener('close', handleSocketClosed);
-    ws.current.addEventListener('message', handleMessage);
-    ws.current.addEventListener('error', handleError);
+    // const wsHost = window.location.host ? window.location.host : 'localhost:3133';
+    // ws.current = new WebSocket(`ws://${wsHost}/progress`);
+    // const handleError = (error) => {
+    //   console.log("ws error", error);
+    // }
+    // ws.current.addEventListener('open', handleSocketOpened);
+    // ws.current.addEventListener('close', handleSocketClosed);
+    // ws.current.addEventListener('message', handleMessage);
+    // ws.current.addEventListener('error', handleError);
 
-    const wsCurrent = ws.current;
+    // const wsCurrent = ws.current;
+    window.courseterrain.addEventListener('job-progress', handleJobProgress);
+    window.courseterrain.addEventListener('job-finished', handleJobFinished);
 
     return () => {
-      console.log('hangup...');
-      ws.current.removeEventListener('open', handleSocketOpened);
-      ws.current.removeEventListener('close', handleSocketClosed);
-      ws.current.removeEventListener('message', handleMessage);
-      ws.current.removeEventListener('error', handleError);
+      window.courseterrain.removeEventListener('job-progress', handleJobProgress);
+      window.courseterrain.removeEventListener('job-finished', handleJobFinished);
+      // console.log('hangup...');
+      // ws.current.removeEventListener('open', handleSocketOpened);
+      // ws.current.removeEventListener('close', handleSocketClosed);
+      // ws.current.removeEventListener('message', handleMessage);
+      // ws.current.removeEventListener('error', handleError);
 
-      wsCurrent.close();
+      // wsCurrent.close();
     };
   }, []);
 
@@ -387,6 +392,10 @@ export default function Sidebar(props) {
       <ProgressDialog
         open={progressDialogOpen}
         jobState={currentJobState}
+        isFinished={isJobFinished}
+        onReveal={handleFolderReveal}
+        onDismiss={handleDialogDismiss}
+        onCancel={handleJobCancel}
         onClose={handleProgressClose}
       />
     </Box>

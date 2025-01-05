@@ -202,12 +202,11 @@ export default function Map(props) {
         const sourceId = `${DT_SOURCE_PREFIX}${index}`;
         const layerId = `${DT_LAYER_PREFIX}${index}`;
         const coordinates = [
-          [item.boundingBox.minX, item.boundingBox.minY],
-          [item.boundingBox.maxX, item.boundingBox.minY],
-          [item.boundingBox.maxX, item.boundingBox.maxY],
           [item.boundingBox.minX, item.boundingBox.maxY],
+          [item.boundingBox.maxX, item.boundingBox.maxY],
+          [item.boundingBox.maxX, item.boundingBox.minY],
+          [item.boundingBox.minX, item.boundingBox.minY],
         ];
-
         mapInstance.current.addSource(sourceId, {
           'type': 'image',
           'url': item.previewGraphicURL,
@@ -344,11 +343,8 @@ export default function Map(props) {
   }, [innerCoordinates, centerPosition]);
 
   const handleMapStyleChange = (_event, style) => {
-    console.log('style', style);
     if (!mapInstance.current) { return; }
-    // const mapStyle = Object.values(MapStyleURIs)[props.mapStyle];
     const mapStyleUri = `mapbox://styles/mapbox/${style}`;
-    console.log('style change', mapStyleUri);
     mapInstance.current.setStyle(mapStyleUri);
     mapInstance.current.on('style.load', addLayers);
   }
@@ -363,18 +359,7 @@ export default function Map(props) {
     }
   }, [innerCoordinates, outerCoordinates, centerPosition]);
 
-  // useEffect(() => {
-  //   if (!mapInstance.current) { return; }
-  //   const mapStyle = Object.values(MapStyleURIs)[props.mapStyle];
-  //   if (mapStyle) {
-  //     console.log('style change', mapStyle);
-  //     mapInstance.current.setStyle(mapStyle.uri);
-  //     mapInstance.current.on('style.load', addLayers);
-  //   }
-  // }, [props.mapStyle]);
-
   useEffect(() => {
-    console.log('dataSource changed!', props.dataSource);
     if (props.dataSource) {
       addDataTiles();
       // addLayers();

@@ -1,15 +1,19 @@
 // Modules to control application life and create native browser window
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
-import express from 'express';
+// import express from 'express';
 import log from 'electron-log';
 import electronUpdater from 'electron-updater';
 
 import './utils/startup.js';
-import { app as server } from './server/index.js';
+// import { app as server } from './server/index.js';
 import { verifyDependencies } from './tools/index.js';
 import { installDependencies } from './tools/installer.js';
 import { buildMenu } from './menu.js';
+// TODO: move and update imports when we kill server
+import { JobQueue } from './jobs.js';
+
+export const jobQueue = new JobQueue();
 
 const PORT = process.env.PORT || 3133;
 
@@ -37,12 +41,14 @@ function createWindow() {
   buildMenu(mainWindow.webContents);
 
   const isDevServer = process.argv.includes('devserver');
-  const port = isDevServer ? 3030 : 3133;
-  log.debug(`Running in ${isDevServer ? 'development' : 'production'} mode on port ${port}`);
-  mainWindow.loadURL(`http://localhost:${port}`);
+  // const port = isDevServer ? 3030 : 3133;
+  log.debug(`Running in ${isDevServer ? 'development' : 'production'} mode`);
   if (isDevServer) {
-    // Open the DevTools.
+    // load the webpack development server
+    mainWindow.loadURL('http://localhost:3030');
     mainWindow.webContents.openDevTools()
+  } else {
+    mainWindow.loadFile(path.resolve(app.getAppPath(), './client/dist/index.html'));
   }
 }
 
@@ -58,7 +64,7 @@ app.whenReady().then(async () => {
   autoUpdater.checkForUpdatesAndNotify();
 
 
-  await startServer();
+  // await startServer();
 
   createWindow();
 
@@ -76,49 +82,68 @@ app.whenReady().then(async () => {
     event.sender.send('install-progress', { text: 'Setting up installation' });
     await installDependencies(event.sender);
   });
+
   ipcMain.handle('dependency-check', async (event) => {
     return verifyDependencies();
   });
+
   ipcMain.handle('link-out', (event, location) => {
     log.info(`Opening external link ${location}`);
     shell.openExternal(location);
   });
-  ipcMain.handle('select-folder', async () => {
-    const folder = await dialog.showSaveDialog({
+
+  ipcMain.handle('select-folder', () => {
+    return dialog.showSaveDialog({
       title: 'Create Course Folder',
-      nameFieldLabel: 'Course Name',
-      // defaultPath: app.getPath('home'),
+      nameFieldLabel: 'Course Folder Name',
       message: 'Select the location to create your course folder',
       buttonLabel: 'Create Course Folder',
-      // properties: ['openDirectory', 'createDirectory', 'promptToCreate']
     });
-    return folder;
   });
+
   ipcMain.handle('quit-app', (event) => {
     log.info('Quitting app...');
     app.quit();
   });
+
+  ipcMain.handle('reveal-folder', (event, folder) => {
+    shell.showItemInFolder(folder);
+  });
+
+  ipcMain.handle('submit-job', (event, jobData) => {
+    const job = jobQueue.add(jobData);
+    job.on('progress', progress => {
+      event.sender.send('job-progress', progress);
+    });
+    job.on('finished', data => {
+      event.sender.send('job-finished', data);
+    });
+  });
+
+  ipcMain.handle('cancel-job', async (event) => {
+    log.info('Canceling job app...');
+    await jobQueue.cancelJob();
+  });
+
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// Quit when all windows are closed
 app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit()
-})
+  app.quit();
+});
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
-function startServer() {
-  return new Promise(resolve => {
-    const distPath = path.resolve(app.getAppPath(), './client/dist');
-    server.use(express.static(distPath));
-    server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+// function startServer() {
+//   return new Promise(resolve => {
+//     const distPath = path.resolve(app.getAppPath(), './client/dist');
+//     server.use(express.static(distPath));
+//     server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
 
-    server.listen(PORT, () => {
-      log.info(`Server running at http://localhost:${PORT}`);
-      resolve();
-    });
-  });
-}
+//     server.listen(PORT, () => {
+//       log.info(`Server running at http://localhost:${PORT}`);
+//       resolve();
+//     });
+//   });
+// }
