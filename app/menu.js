@@ -4,6 +4,7 @@ import pkg from '../package.json' with { type: 'json' };
 const isMac = process.platform === 'darwin'
 
 const HelpUrl = 'https://ctt.opengolfsim.com';
+const BugReportUrl = 'https://forms.gle/X14RtojJe9hWYbS29';
 
 const MapStyles = {
   'satellite-streets-v12': 'Satellite',
@@ -169,6 +170,12 @@ export function buildMenu(webContents) {
           label: 'Help',
           click: async () => {
             await shell.openExternal(HelpUrl)
+          }
+        },
+        {
+          label: 'Report an Issue',
+          click: async () => {
+            await shell.openExternal(BugReportUrl)
           }
         }
       ]
