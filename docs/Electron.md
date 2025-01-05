@@ -1,4 +1,8 @@
-We use the [Electron](https://www.electronjs.org/) framework to bundle everything into a desktop application.
+---
+title: Electron Notes
+---
+
+The Course Terrain Tool use the [Electron](https://www.electronjs.org/) framework to bundle everything into a desktop application. This document contains notes and example commands that are helpful for developing and debugging the app.
 
 ### Icons
 
