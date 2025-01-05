@@ -55,6 +55,12 @@ export function buildMenu(webContents) {
       }]
       : []),
     // { role: 'fileMenu' }
+    ...!isMac ? [
+      {
+        label: 'File',
+        submenu: [{ role: 'quit' }]
+      }
+    ] : [],
     // {
     //   label: 'File',
     //   submenu: [
