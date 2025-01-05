@@ -180,6 +180,11 @@ export class Job extends EventEmitter {
             prefix: 'outer',
             outputDirectory: rawDataDirectory
           }),
+          new GenerateSatelliteImageryTask({
+            prefix: 'outer',
+            outputDirectory: overlaysDirectory,
+            coordinates: this.data.coordinates.outer
+          }),
         ] : [],
 
 
