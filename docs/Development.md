@@ -1,7 +1,11 @@
+---
+title: Electron Notes
+---
+
 ### Development
 
 
-> [!ERROR]
+{: .warning }
 These docs are wildly out of date and need to be updated with Electron-based instructions. 
 
 

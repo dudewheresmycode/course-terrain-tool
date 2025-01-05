@@ -2,3 +2,16 @@ remote_theme: just-the-docs/just-the-docs
 logo: "images/icon.png"
 title: Course Terrain Tool
 description: An open source tool to find and process terrain data for use in the OPCD golf course design process
+
+# color_scheme: dark
+
+callouts:
+  note:
+    title: Note
+    color: blue
+  warning:
+    title: Warning
+    color: yellow
+  error:
+    title: Error
+    color: red

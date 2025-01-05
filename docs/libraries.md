@@ -20,7 +20,7 @@ Course Terrain Tool (CTT) depends on a couple libraries to process the LiDAR dat
 
 During the installation process, we first install [`conda-forge`](https://conda-forge.org/download/) to install GDAL and PDAL into an isolated environment on your computer. You may be prompted to have CTT automatically install Conda on your system during initial setup.
 
-> [!NOTE]
+{: .note }
 > Conda is optional on macOS. You can install GDAL and PDAL manually using homebrew.
 
 ## Setup Wizard
@@ -64,7 +64,7 @@ brew install gdal
 brew install pdal
 ```
 
-> [!NOTE]
+{: .note }
 > If you don't have homebrew setup, it's actually just a super easy one liner in the terminal. Just check their docs at [brew.sh](https://brew.sh/).
 
 ### Windows
