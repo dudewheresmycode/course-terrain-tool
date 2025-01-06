@@ -127,10 +127,10 @@ export default function SearchDialog(props) {
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>
         ) : (
           <List>
-            {results ? results.map(
+            {results?.length > 0 ? results.map(
               (result, index) =>
                 <SearchResultItem onSelect={props.onSelect} result={result} key={index} />
-            ) : null
+            ) : <Box sx={{ textAlign: 'center', pt: 5, color: 'text.secondary' }}>No data found</Box>
             }
           </List>
         )}
