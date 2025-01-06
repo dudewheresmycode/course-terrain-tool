@@ -17,7 +17,7 @@ import log from 'electron-log';
 import { CreateDirectoryTask } from './tasks/directory.js';
 import { DownloadTask } from './tasks/download.js';
 import { RasterizeLAZTask, MergeLAZTask } from './tasks/pdal.js';
-import { CreateCSVTask } from './tasks/csv.js';
+import { CreateCSVTask } from './tasks/stats.js';
 import {
   GeoTiffFillNoDataTask,
   GeoTiffStatsTask,

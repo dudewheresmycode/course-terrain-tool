@@ -90,7 +90,7 @@ export class GeoTiffStatsTask extends BaseTask {
     }
     const min = band.computedMin;
     const max = band.computedMax;
-    const unit = band.unit.includes('feet') ? 'feet' : 'meters';
+    const unit = band.unit?.includes('feet') ? 'feet' : 'meters';
 
     if (!data._stats) {
       data._stats = {};

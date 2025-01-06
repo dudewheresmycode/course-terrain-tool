@@ -93,9 +93,9 @@ export default function Sidebar(props) {
     };
     console.log('submitting job', payload);
 
-    window.courseterrain.submitJob(payload);
     setIsJobFinished(false);
     setJobError(false);
+    window.courseterrain.submitJob(payload);
     // if (!ws.current) {
     //   // subscribe to progress updates via websocket
     //   console.log('Unable to send to server');
