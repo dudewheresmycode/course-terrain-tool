@@ -95,6 +95,7 @@ export default function Sidebar(props) {
 
     window.courseterrain.submitJob(payload);
     setIsJobFinished(false);
+    setJobError(false);
     // if (!ws.current) {
     //   // subscribe to progress updates via websocket
     //   console.log('Unable to send to server');
