@@ -35,7 +35,7 @@
     ]
   },
   "scripts": {
-    "tag:version": "package-version-git-tag --push --verbose",
+    "release": "package-version-git-tag --push --verbose",
     "start": "electron .",
     "app:debug": "DEBUG=electron-builder electron-builder --dir",
     "app:dir": "electron-builder --dir",
