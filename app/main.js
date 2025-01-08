@@ -12,7 +12,6 @@ import { installDependencies } from './tools/installer.js';
 import { buildMenu } from './menu.js';
 // TODO: move and update imports when we kill server
 import { JobQueue } from './jobs.js';
-import importFiles from './import.js';
 import { getLAZInfo } from './tasks/pdal.js';
 import crsList from './crs-list.json' with { type: 'json' };
 import pMap from 'p-map';
