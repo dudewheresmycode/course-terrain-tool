@@ -365,7 +365,7 @@ export default function Sidebar(props) {
               </>
             ) : null}
           </Box>
-          <Box sx={{ overflowY: 'scroll', height: 0, flex: '1 1 auto' }}>
+          <Box sx={{ overflowY: 'auto', height: 0, flex: '1 1 auto' }}>
             <DataSources
               isPending={isMetadataPending}
               onImportClick={handleImportFiles}
