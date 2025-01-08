@@ -315,8 +315,8 @@ export default function Sidebar(props) {
         </Button>
       </Box> */}
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, p: 3 }}>
-        <Box sx={{ height: 130 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <Box sx={{ height: 130, p: 3 }}>
 
           {!props.coordinates ? (
             <Box sx={{
@@ -351,8 +351,8 @@ export default function Sidebar(props) {
           )}
         </Box>
 
-        <Box sx={{ flex: 1, mt: 2, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1, mb: 1 }}>
+        <Box sx={{ flex: 1, mt: 3, display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1, mb: 1, px: 3 }}>
             <Typography sx={{ flex: 1, py: 2 }} variant="h5">Data Sources</Typography>
             {props.dataSource?.items?.length ? (
               <>
@@ -379,7 +379,7 @@ export default function Sidebar(props) {
           </Box>
         </Box>
 
-        <Box sx={{ mt: 2, mx: 2 }}>
+        <Box sx={{ mt: 2, mx: 2, p: 3 }}>
           {/* <Button disabled={true} fullWidth={true} variant="outlined" color="secondary">
             Download Files
           </Button> */}

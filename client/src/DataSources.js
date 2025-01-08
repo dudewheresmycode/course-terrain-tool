@@ -45,8 +45,8 @@ const CustomList = styled(List)(({ theme }) => ({
   '.MuiListItem-root': {
     paddingTop: 3,
     paddingBottom: 3,
-    paddingRight: 0,
-    paddingLeft: 0,
+    paddingRight: theme.spacing(3),
+    paddingLeft: theme.spacing(3),
   },
   '.MuiListItemIcon-root': {
     minWidth: 40
@@ -237,7 +237,7 @@ export default function DataSources(props) {
 
   if (!props.dataSource?.items?.length) {
     return (
-      <FormControl sx={{ mt: 1 }} fullWidth={true} variant="outlined">
+      <FormControl sx={{ px: 3 }} fullWidth={true} variant="outlined">
         <Button
           sx={{ mb: 1 }}
           fullWidth={true}
@@ -266,7 +266,20 @@ export default function DataSources(props) {
   return (
     <>
       <CustomList dense={true}>
-        {props.dataSource.items.map((item, index) =>
+        {[
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+          ...props.dataSource.items,
+        ].map((item, index) =>
         (<DataListItem
           item={item}
           key={index}

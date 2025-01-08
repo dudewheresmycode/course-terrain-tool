@@ -61,9 +61,6 @@ export class Job extends EventEmitter {
     if (!this.data.outputFolder) {
       throw new Error('Missing outputDirectory. Unable to continue');
     }
-    // if (!this.data.dataSource?.format) {
-    //   throw new Error('Missing valid data source format!');
-    // }
 
     this.courseDirectory = this.data.outputFolder;
     log.info(`Using course directory: ${this.courseDirectory}`);
