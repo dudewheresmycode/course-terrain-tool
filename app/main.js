@@ -1,16 +1,14 @@
-// Modules to control application life and create native browser window
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
-// import express from 'express';
 import log from 'electron-log';
 import electronUpdater from 'electron-updater';
 
 import './utils/startup.js';
-// import { app as server } from './server/index.js';
+
 import { verifyDependencies } from './tools/index.js';
 import { installDependencies } from './tools/installer.js';
 import { buildMenu } from './menu.js';
-// TODO: move and update imports when we kill server
+
 import { JobQueue } from './jobs.js';
 import { getLAZInfo } from './tasks/pdal.js';
 import crsList from './crs-list.json' with { type: 'json' };
@@ -20,7 +18,7 @@ export const jobQueue = new JobQueue();
 
 const PORT = process.env.PORT || 3133;
 
-// initializes the logger for any renderer process
+// initializes the logger for any renderer process?
 log.initialize();
 
 // initialize the auto-updater
@@ -114,19 +112,18 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('submit-job', (event, jobData) => {
-    console.log('jobData', jobData);
-    // event.sender.send('job-progress', { step: 'something', label: 'Working on something' });
+    log.debug('Submitting job with data:', jobData);
     const job = jobQueue.add(jobData);
     job.on('progress', progress => {
-      console.log('progress', progress);
+      log.info('Job Progress', progress);
       event.sender.send('job-progress', progress);
     });
     job.on('error', error => {
-      console.log('error', error);
+      log.error('Job Error', error);
       event.sender.send('job-error', error);
     });
     job.on('finished', data => {
-      console.log('finished', data);
+      log.info('Job Finished', data);
       event.sender.send('job-finished', data);
     });
   });
@@ -150,7 +147,6 @@ app.whenReady().then(async () => {
         source: 'local'
       }));
     }
-    // return importFiles();
   });
 
   ipcMain.handle('get-crs-list', () => {
@@ -175,20 +171,12 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('get-metadata', async (event, items) => {
-    // console.log('dataSources', items);
-    // const copy = [];
-
-    // metadataSignals.push(signal);
     const copy = await pMap(items, async item => {
-      // const msignal = AbortSignal.timeout(5_000);
-      // msignal.addEventListener('abort', () => {
-      //   console.log('aborted');
-      //   event.sender.send('file-metadata', { ...item, ...info });
-      // }, { once: true });
       try {
+
         const info = await getLAZInfo(item, { signal: metadataSignal.signal, timeout: 30_000 });
-        console.log('received', info);
         event.sender.send('file-metadata', { ...item, ...info });
+
         return {
           ...item,
           ...info
@@ -197,7 +185,7 @@ app.whenReady().then(async () => {
         log.error('error', error);
         event.sender.send('file-metadata', { ...item, error: 'Error Fetching CRS' });
       }
-    }, { concurrency: 4, signal: metadataSignal.signal }).catch(error => console.log(error));
+    }, { concurrency: 4, signal: metadataSignal.signal }).catch(error => log.error(error));
 
     return copy;
   });
@@ -207,19 +195,3 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', function () {
   app.quit();
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
-
-// function startServer() {
-//   return new Promise(resolve => {
-//     const distPath = path.resolve(app.getAppPath(), './client/dist');
-//     server.use(express.static(distPath));
-//     server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
-
-//     server.listen(PORT, () => {
-//       log.info(`Server running at http://localhost:${PORT}`);
-//       resolve();
-//     });
-//   });
-// }

@@ -55,38 +55,14 @@ export function buildMenu(webContents) {
         ]
       }]
       : []),
-    // { role: 'fileMenu' }
+
     ...!isMac ? [{
       label: 'File',
       submenu: [
         { role: 'quit' }
       ]
     }] : [],
-    // {
-    //   label: 'File',
-    //   submenu: [
-    //     { label: 'Open Project...' },
-    //     { label: 'Save Project' },
-    //     { type: 'separator' },
-    //     {
-    //       label: 'Import LAZ/LAS file(s)',
-    //       click: async () => {
-    //         const files = await importFiles();
-    //         console.log('files', files);
-    //       }
-    //     },
-    //     // { label: 'Import GeoTIFF file(s)' },
-    //     // !isMac && { role: 'quit' }
-    //     ...!isMac ? [{ type: 'separator' }, { role: 'quit' }] : []
-    //   ]
-    // },
-    // {
-    //   label: 'File',
-    //   submenu: [
-    //     isMac ? { role: 'close' } : { role: 'quit' }
-    //   ]
-    // },
-    // { role: 'editMenu' }
+
     {
       label: 'Edit',
       submenu: [
@@ -101,7 +77,7 @@ export function buildMenu(webContents) {
         { role: 'selectAll' }
       ]
     },
-    // { role: 'viewMenu' }
+
     {
       label: 'View',
       id: 'view',
@@ -120,35 +96,6 @@ export function buildMenu(webContents) {
               }
             }
           }),
-          // submenu: [
-          //   {
-          //     label: 'Satellite',
-          //     type: 'radio',
-          //     click: (menuItem, window) => {
-          //       console.log('layer change');
-          //       // menuItem.checked = true;
-          //       webContents.send('map-layer-change', 'satellite-streets-v12');
-          //     }
-          //   },
-          //   {
-          //     label: 'Satellite (image only)',
-          //     type: 'radio',
-          //     click: (menuItem, window) => {
-          //       // menuItem.checked = true;
-          //       console.log('layer change');
-          //       webContents.send('map-layer-change', 'satellite-v9');
-          //     }
-          //   },
-          //   {
-          //     label: 'Streets',
-          //     type: 'radio',
-          //     click: (menuItem, window) => {
-          //       // menuItem.checked = true;
-          //       console.log('layer change');
-          //       webContents.send('map-layer-change', 'standard');
-          //     }
-          //   }
-          // ]
         },
         { type: 'separator' },
         { role: 'reload' },
@@ -156,13 +103,11 @@ export function buildMenu(webContents) {
         { role: 'toggleDevTools' },
         { type: 'separator' },
         { role: 'resetZoom' },
-        // { role: 'zoomIn' },
-        // { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' }
       ]
     },
-    // { role: 'windowMenu' }
+
     {
       label: 'Window',
       submenu: [

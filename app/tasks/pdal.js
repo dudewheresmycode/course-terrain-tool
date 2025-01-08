@@ -1,13 +1,7 @@
 import path from 'node:path';
 import log from 'electron-log';
 import { spawn } from 'node:child_process';
-import { EventEmitter } from 'node:events';
-// import wktcrs from 'wkt-crs';
-import wellknown from 'wellknown';
 import proj4 from 'proj4';
-import reprojectBoundingBox from 'reproject-bbox';
-
-// import { create as createXML } from 'xmlbuilder2';
 
 import BaseTask from './base.js';
 import { tools } from '../tools/index.js';
@@ -15,8 +9,6 @@ import { getProjInfo } from './gdal.js';
 
 // the projection that our map and course/crop area uses
 export const CommonProjection = '+proj=longlat +datum=WGS84 +no_defs +type=crs';
-// const CommonProjection = '+proj=longlat +lat_0=90 +lon_0=0 +x_0=6300000 +y_0=6300000 +ellps=WGS84 +datum=WGS84 +units=m +no_defs';
-
 
 export function runPDALCommand(command, args, abortController, stdinData) {
 
@@ -52,7 +44,6 @@ export function runPDALCommand(command, args, abortController, stdinData) {
     });
     let response = '';
     child.stdout.on('data', data => {
-      // log.debug(`[pdal.stdout]: ${data}`);
       response += data.toString();
     });
     if (stdinData) {
@@ -62,7 +53,6 @@ export function runPDALCommand(command, args, abortController, stdinData) {
 
     child.on('error', error => {
       log.error('[pdal] process error:', error);
-      // child.kill(abortController.signal);
       return reject(error);
     });
     child.on('exit', code => {
@@ -112,18 +102,13 @@ export async function getLAZInfo(item, abortController) {
   const inputUri = item._file || item.downloadURL;
 
   // we re-run this method when we set a new CRS
-  // so skip the PDAL info command if we already grabbed the metadata once
-  // and just need to reproject the box
-  // console.log('get info', item.crs);
-  // reproject the user polygon from the user input
+  // we skip the PDAL info command if we already grabbed the metadata once and just need to reproject the box
   if (item.crs?.source === 'user') {
-    console.log('GET POLYGON FOR USER SET CRS');
-    console.log(item.crs);
     const proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
-    console.log('proj4', proj4);
+
     item.crs.proj4 = proj4;
     const newBounds = reprojectBounds(proj4, ...item.bbox.coordinates);
-    // console.log('new boundary', newBounds);
+
     item.bbox.boundary = {
       'type': 'Feature',
       'geometry': {
@@ -136,17 +121,6 @@ export async function getLAZInfo(item, abortController) {
   const response = await runPDALCommand('info', ['--metadata', inputUri], abortController);
   let unit = item.unit;
   let crs = item.crs;
-
-  // console.log('metadata', response);
-  // const bbox = response?.stats?.bbox?.['EPSG:4326'];
-
-
-  // wellknown  
-  // const boundaryWKT = response?.summary?.bounds;
-  let boundaryJSON;
-  // if (boundaryWKT) {
-  //   boundaryJSON = wellknown(boundaryWKT);
-  // }
 
   const projectedCRS = response?.metadata?.srs?.json?.components?.find(c => c.type === 'ProjectedCRS');
   if (projectedCRS) {
@@ -165,46 +139,9 @@ export async function getLAZInfo(item, abortController) {
 
   if (response.metadata.srs.proj4) {
     log.debug(`Re-projecting bbox coordinates to ${CommonProjection}`, bbox);
-    // [item.boundingBox?.minX, item.boundingBox?.maxY],
-    // [item.boundingBox?.maxX, item.boundingBox?.maxY],
-    // [item.boundingBox?.maxX, item.boundingBox?.minY],
-    // [item.boundingBox?.minX, item.boundingBox?.minY],
     polygon = reprojectBounds(response.metadata.srs.proj4, minx, miny, maxx, maxy);
-    // convert between CRS types
-    // polygon = [
-    //   proj4(
-    //     response.metadata.srs.proj4,
-    //     CommonProjection,
-    //     [minx, miny]
-    //   ),
-    //   proj4(
-    //     response.metadata.srs.proj4,
-    //     CommonProjection,
-    //     [maxx, maxy]
-    //   ),
-    //   proj4(
-    //     response.metadata.srs.proj4,
-    //     CommonProjection,
-    //     [maxx, miny]
-    //   ),
-    //   proj4(
-    //     response.metadata.srs.proj4,
-    //     CommonProjection,
-    //     [minx, miny]
-    //   ),
-    // ];
-    console.log(polygon);
-    // bbox = [min, max];
-    // bbox = reprojectBoundingBox({
-    //   bbox,
-    //   // spatial reference system of input bounding box
-    //   from: projectedCRS.base_crs.id.code,
-    //   // convert bounding box to this spatial reference system
-    //   to: 4326
-    // });
   }
 
-  console.log('boundaryJSON', bbox);
   return {
     bbox: {
       coordinates: bbox,
@@ -215,10 +152,6 @@ export async function getLAZInfo(item, abortController) {
           'coordinates': [polygon]
         }
       }
-      // boundary: {
-      //   type: 'Polygon',
-      //   coordinates: [[bbox[0], bbox[1]], [bbox[2], bbox[3]]]
-      // }
     },
     unit,
     crs
@@ -235,7 +168,6 @@ export class RasterizeLAZTask extends BaseTask {
     super();
     this.id = 'pdal-raster';
     this.label = `Converting ${prefix} LAZ/LAS file to TIFF file`;
-    // this.mergedLaz = mergedLaz;
     this.prefix = prefix;
     this.resolution = resolution;
     this.outputDirectory = outputDirectory;
@@ -276,33 +208,8 @@ export class RasterizeLAZTask extends BaseTask {
 
     await runPDALCommand('pipeline', [], this.abortController, pipeline);
     data._outputFiles[this.prefix].tiff = tiffOutputFile;
-    // return tiffOutputFile;
   }
 }
-
-// export class GetLAZInfoTask extends BaseTask {
-//   constructor() {
-//     super();
-//     this.label = 'Gathering information about the point cloud data';
-//     this.exitOnComplete = true;
-//   }
-
-//   async process(data) {
-//     const localFiles = data._outputFiles.imported || data._outputFiles.downloads.map(item => item._file).filter(Boolean);
-//     if (!localFiles.length) {
-//       throw new Error('No local point cloud files found!');
-//     }
-
-//     const lazMetadata = [];
-//     for (const filePath of localFiles) {
-//       const response = await runPDALCommand('info', ['--metadata', filePath], this.abortController);
-//       const metadata = parseInfoFromMetadata(response);
-//       lazMetadata.push(metadata);
-//     }
-//     data._lazMetadata = lazMetadata;
-
-//   }
-// }
 
 export class MergeLAZTask extends BaseTask {
   constructor({ coordinates, outputDirectory }) {
@@ -322,29 +229,25 @@ export class MergeLAZTask extends BaseTask {
     }
     const lazOutputFile = path.join(this.outputDirectory, 'merged_laz_outer.las');
 
-    console.log('localFiles', localFiles);
     // crop area
     const cropWKT = `POLYGON ((${this.coordinates.map(coord => coord.join(' ')).join(', ')}))`;
 
     const pipeline = {
       pipeline: [
-        // ...localFiles,
         ...data._outputFiles.downloads.map(item => {
           const inputSRS = `${item.crs.id.authority}:${item.crs.id.code}`;
-          console.log(`inputSRS: ${inputSRS}`);
-          console.log(`file: ${item._file}`);
           return {
             type: 'readers.las',
             filename: item._file,
-            // QUESTION: Should we use "override_srs" here to force the CRS to the value set in the app?
-            // I figured if the LAS file contains the projection it's probably the correct one. So I chose default_srs
-            // to make it more dummy-proof. If we really want to be able to force
-            // override_srs
-            // override_srs: inputSRS
-            default_srs: inputSRS
+            // force the user set CRS
+            ...item.crs.source === 'user' ? { override_srs: inputSRS } : {}
           }
         }),
-        // QUESTION: do we want to apply this to all files? or just ones with no classifcation data?
+        // TODO: move the filtering to a separate step
+        // this way we use the cropped/merged LAS file to generate vegetation masks
+        // and heat-maps using data we're currently filtering out
+
+        // QUESTION: do we want to apply the SMRF filter to all files? or just ones with no classification data?
         // https://pdal.io/en/2.4.3/workshop/exercises/analysis/ground/ground.html
         {
           type: 'filters.smrf',
@@ -367,11 +270,6 @@ export class MergeLAZTask extends BaseTask {
           ].join(',') //Z[1.1:2.1],
           // where: '(Classification != 0)'
         },
-        // {
-        //   type: 'filters.reprojection',
-        //   // in_srs: 'EPSG:26916',
-        //   out_srs: 'EPSG:4326'
-        // },
         {
           type: 'filters.crop',
           a_srs: 'EPSG:4326',

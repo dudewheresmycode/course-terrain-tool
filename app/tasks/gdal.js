@@ -13,7 +13,7 @@ import BaseTask from './base.js';
 const execAsync = promisify(exec);
 
 const WmsDirectory = isDev ? path.resolve(process.cwd(), './wms') : path.resolve(app.getAppPath(), '../wms');
-console.log(`WmsDirectory: ${WmsDirectory}`);
+
 const SatelliteSources = [
   'google',
   'bing'
@@ -208,7 +208,6 @@ export class GenerateSatelliteImageryTask extends BaseTask {
       const destFile = path.join(this.outputDirectory, `${this.prefix}_sat_${source}.jpg`);
       const wmsSource = path.join(WmsDirectory, `${source}.xml`);
 
-      console.log(`wmsSource: ${wmsSource}`);
       if (!fs.existsSync(wmsSource)) {
         throw new Error(`Unable to generate ${source} satellite images. Missing WMS XML file.`);
       }

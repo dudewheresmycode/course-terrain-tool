@@ -2,6 +2,7 @@ import fs from 'fs';
 import pMap from 'p-map';
 import path from 'path';
 import axios from 'axios';
+import log from 'electron-log';
 
 import BaseTask from './base.js';
 
@@ -35,7 +36,7 @@ export class DownloadTask extends BaseTask {
     if (source._file && fs.existsSync(source._file)) {
       return source;
     }
-    console.log('download source', source);
+    log.debug(`Downloading file: ${source.downloadURL}`);
     const downloadUrl = new URL(source.downloadURL);
     const filePath = path.join(this.downloadDirectory, path.basename(downloadUrl.pathname));
     if (fs.existsSync(filePath)) {
@@ -57,7 +58,6 @@ export class DownloadTask extends BaseTask {
           lastLoaded = progressEvent.loaded;
           const percent = ((this.totalBytesDownloaded / this.totalBytesToDownload) * 100);
           const label = `Downloading ${totalItems} lidar data files (${percent.toFixed(1)}%)`;
-          console.log(`this.totalBytesDownloaded: ${this.totalBytesDownloaded}, ${this.totalBytesToDownload}`);
           this.emit('progress', label, percent);
         }
       }
@@ -72,7 +72,6 @@ export class DownloadTask extends BaseTask {
       });
       outputStream.on('close', () => {
         if (!error) {
-          console.log('finished downloading file');
           resolve({
             ...source,
             _file: filePath
