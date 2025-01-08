@@ -21,7 +21,7 @@ const StyledProgressContent = styled(DialogContent)(({ theme }) => ({
   justifyContent: 'center'
 }));
 
-function ProgressDialogContent(props) {
+export function ProgressDialogContent(props) {
   const job = props.jobState || {};
 
   if (props.isFinished) {
@@ -32,26 +32,25 @@ function ProgressDialogContent(props) {
           <Typography sx={{ mb: 2 }} variant="h5">Job Complete!</Typography>
           <Typography variant="body2">Check the output folder to see the generated files.</Typography>
         </StyledProgressContent>
-        <DialogActions>
-          <Button variant="outlined" color="secondary" onClick={props.onReveal}>Reveal in {window.courseterrain?.isMac ? 'Finder' : 'File Explorer'}</Button>
+        {/* <DialogActions>
           <Button variant="contained" color="primary" onClick={props.onDismiss}>Done</Button>
-        </DialogActions>
+        </DialogActions> */}
       </>
     )
   }
-  if (job?.state === 'canceled') {
-    return (
-      <>
-        <StyledProgressContent>
-          <CancelIcon color="warning" sx={{ fontSize: 40 }} />
-          <Typography sx={{ mb: 2 }} variant="h5">Job Canceled</Typography>
-        </StyledProgressContent>
-        <DialogActions>
-          <Button variant="contained" color="primary" onClick={props.onDismiss}>Done</Button>
-        </DialogActions>
-      </>
-    )
-  }
+  // if (props.isCanceled) {
+  //   return (
+  //     <>
+  //       <StyledProgressContent>
+  //         <CancelIcon color="warning" sx={{ fontSize: 40 }} />
+  //         <Typography sx={{ mb: 2 }} variant="h5">Canceling Job</Typography>
+  //       </StyledProgressContent>
+  //       <DialogActions>
+  //         <Button variant="contained" color="primary" onClick={props.onDismiss}>Done</Button>
+  //       </DialogActions>
+  //     </>
+  //   )
+  // }
   if (props.jobError) {
     return (
       <>
@@ -71,16 +70,17 @@ function ProgressDialogContent(props) {
       <StyledProgressContent sx={{ textAlign: 'center' }}>
         <Box sx={{ flex: 1, width: '100%' }}>
           <LinearProgress
-            variant={job?.state === 'running' && job?.progress?.percent ? 'determinate' : 'indeterminate'}
-            value={job?.progress?.percent ? job.progress.percent : 0}
+            variant={job?.percent ? 'determinate' : 'indeterminate'}
+            color={props.isCanceled ? 'secondary' : 'primary'}
+            value={job?.percent ? job.percent : 0}
           />
         </Box>
-        <Typography sx={{ mt: 3 }}>{job?.progress?.label || 'Starting job'}</Typography>
-        <Typography color="textSecondary" sx={{ mt: 1 }}>{job?.progress?.secondary || ''}</Typography>
+        <Typography sx={{ mt: 3 }}>{props.isCanceled ? 'Canceling Job...' : job?.label || 'Starting job'}</Typography>
+        <Typography color="textSecondary" sx={{ mt: 1 }}>{job?.secondary || ''}</Typography>
       </StyledProgressContent>
-      <DialogActions>
+      {/* <DialogActions>
         <Button variant="outlined" color="secondary" onClick={props.onCancel}>Cancel</Button>
-      </DialogActions>
+      </DialogActions> */}
     </>
   )
 }
@@ -89,10 +89,11 @@ export default function ProgressDialog(props) {
   const handleClose = (event, reason) => {
     if (reason && reason === "backdropClick")
       return;
+
     props.onClose();
   }
   return (
-    <Dialog onClose={handleClose} open={props.open} fullWidth={true} maxWidth="sm" >
+    <Dialog onClose={handleClose} open={props.open} fullWidth={true} maxWidth="sm">
       <DialogTitle id="alert-dialog-title">
         Processing Terrain Data
       </DialogTitle>

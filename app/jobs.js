@@ -59,17 +59,19 @@ export class Job extends EventEmitter {
   }
 
   update() {
-    this.emit('progress', {
-      state: this.state,
-      data: this.data,
-      progress: this.progress,
-      ...this.error && { error: this.error }
-    });
+    this.emit('progress', this.progress);
+    // this.emit('progress', {
+    //   state: this.state,
+    //   data: this.data,
+    //   progress: this.progress,
+    //   ...this.error && { error: this.error }
+    // });
   }
 
   updateProgress({ id, label, percent }) {
     this.progress = { id, label, percent };
-    this.update();
+    this.emit('progress', this.progress);
+    // this.update();
     log.info(`[${id}]${percent ? '[' + percent.toFixed(1) + '%]' : ''} ${label}`);
   }
 
@@ -85,9 +87,9 @@ export class Job extends EventEmitter {
     if (!this.data.outputFolder) {
       throw new Error('Missing outputDirectory. Unable to continue');
     }
-    if (!this.data.dataSource?.format) {
-      throw new Error('Missing valid data source format!');
-    }
+    // if (!this.data.dataSource?.format) {
+    //   throw new Error('Missing valid data source format!');
+    // }
 
     this.courseDirectory = this.data.outputFolder;
     log.info(`Using course directory: ${this.courseDirectory}`);
@@ -100,7 +102,7 @@ export class Job extends EventEmitter {
     const overlaysDirectory = path.join(this.courseDirectory, 'Overlays');
 
 
-    const isLAZInput = this.data.dataSource?.format === 'LAZ';
+    // const isLAZInput = this.data.dataSource?.format === 'LAZ';
     // const isTIFFInput = this.data.dataSource?.format === 'GeoTIFF';
     const isOuterEnabled = this.data.coordinates.outer?.length;
 
@@ -116,87 +118,93 @@ export class Job extends EventEmitter {
       new CreateDirectoryTask({
         directory: tiffDirectory
       }),
-      isLAZInput && new CreateDirectoryTask({
+
+      new CreateDirectoryTask({
         directory: lazDataDirectory
       }),
 
       new DownloadTask({
-        // sources: this.data.dataSource.items,
         downloadDirectory
       }),
 
-      ...isLAZInput ? [
-        new MergeLAZTask({
-          // items: this.data.dataSource.items,
-          coordinates: cropCoordinates,
-          outputDirectory: lazDataDirectory
-        }),
-        // const tiff = await lazToTiff(mergedPointCloud, filenamePrefix, resolution, outputDirectory, coordinates);
-        new RasterizeLAZTask({
-          prefix: 'inner',
-          resolution: this.data.resolution.inner,
-          outputDirectory: tiffDirectory,
-          coordinates: this.data.coordinates.inner
-        }),
-        new GeoTiffFillNoDataTask({
-          prefix: 'inner',
-          resolution: this.data.resolution.inner,
-          outputDirectory: tiffDirectory
-        }),
+      new MergeLAZTask({
+        coordinates: cropCoordinates,
+        outputDirectory: lazDataDirectory
+      }),
 
-        new GeoTiffStatsTask({ prefix: 'inner' }),
+      new RasterizeLAZTask({
+        prefix: 'inner',
+        resolution: this.data.resolution.inner,
+        outputDirectory: tiffDirectory,
+        coordinates: this.data.coordinates.inner
+      }),
 
-        new CreateDirectoryTask({
-          directory: rawDataDirectory
-        }),
-        new GeoTiffToRaw({
-          prefix: 'inner',
-          outputDirectory: rawDataDirectory
-        }),
+      new GeoTiffFillNoDataTask({
+        prefix: 'inner',
+        resolution: this.data.resolution.inner,
+        outputDirectory: tiffDirectory
+      }),
 
-        new CreateDirectoryTask({
-          directory: overlaysDirectory
-        }),
+      new GeoTiffStatsTask({ prefix: 'inner' }),
+
+      new CreateDirectoryTask({
+        directory: rawDataDirectory
+      }),
+      new GeoTiffToRaw({
+        prefix: 'inner',
+        outputDirectory: rawDataDirectory
+      }),
+
+      new CreateDirectoryTask({
+        directory: overlaysDirectory
+      }),
+
+      ...(this.data.tasksEnabled.google || this.data.tasksEnabled.bing) ? [
         new GenerateSatelliteImageryTask({
           prefix: 'inner',
           outputDirectory: overlaysDirectory,
-          coordinates: this.data.coordinates.inner
+          coordinates: this.data.coordinates.inner,
+          tasksEnabled: this.data.tasksEnabled
         }),
+      ] : [],
 
-        ...isOuterEnabled ? [
-          new RasterizeLAZTask({
-            prefix: 'outer',
-            resolution: this.data.resolution.outer,
-            outputDirectory: tiffDirectory,
-            coordinates: this.data.coordinates.outer
-          }),
-          new GeoTiffFillNoDataTask({
-            prefix: 'outer',
-            resolution: this.data.resolution.outer,
-            outputDirectory: tiffDirectory
-          }),
-          new GeoTiffStatsTask({ prefix: 'outer' }),
-          new GeoTiffToRaw({
-            prefix: 'outer',
-            outputDirectory: rawDataDirectory
-          }),
+      ...isOuterEnabled ? [
+        new RasterizeLAZTask({
+          prefix: 'outer',
+          resolution: this.data.resolution.outer,
+          outputDirectory: tiffDirectory,
+          coordinates: this.data.coordinates.outer
+        }),
+        new GeoTiffFillNoDataTask({
+          prefix: 'outer',
+          resolution: this.data.resolution.outer,
+          outputDirectory: tiffDirectory
+        }),
+        new GeoTiffStatsTask({ prefix: 'outer' }),
+        new GeoTiffToRaw({
+          prefix: 'outer',
+          outputDirectory: rawDataDirectory
+        }),
+        ...(this.data.tasksEnabled.google || this.data.tasksEnabled.bing) ? [
           new GenerateSatelliteImageryTask({
             prefix: 'outer',
             outputDirectory: overlaysDirectory,
-            coordinates: this.data.coordinates.outer
+            coordinates: this.data.coordinates.outer,
+            tasksEnabled: this.data.tasksEnabled
           }),
         ] : [],
+      ] : [],
 
 
+      ...this.data.tasksEnabled.hillshade ? [
         new GenerateHillShadeImageTask({
           outputDirectory: overlaysDirectory
         }),
-
-        new CreateCSVTask({
-          outputDirectory: this.courseDirectory
-        })
-
       ] : [],
+
+      new CreateCSVTask({
+        outputDirectory: this.courseDirectory
+      })
 
     ].filter(Boolean);
 
@@ -213,9 +221,10 @@ export class Job extends EventEmitter {
       // run task
       await task.process(this.data);
 
-      log.info(`Finished task ${task.id} in ${(started / 1000).toFixed(2)} seconds`);
+      const take = Date.now() - started;
+      log.info(`Finished task ${task.id} in ${(take / 1000).toFixed(2)} seconds`);
 
-      if (this.state === JobStates.Canceled) {
+      if (this.state === JobStates.Canceled || task.exitOnComplete) {
         break;
       }
     }

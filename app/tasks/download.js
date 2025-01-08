@@ -8,6 +8,9 @@ import BaseTask from './base.js';
 // utils
 
 async function fetchFileSize(source) {
+  if (source._file && fs.existsSync(source._file)) {
+    return source;
+  }
   // since we stream to the local file, axios enables chunked transfer encoding removing the content-length from the header
   // so we do a quick head object to get total filesize first
   const res = await fetch(source.downloadURL, { method: 'HEAD' });
@@ -17,8 +20,6 @@ async function fetchFileSize(source) {
   }
   return source;
 }
-
-
 
 export class DownloadTask extends BaseTask {
   constructor({
@@ -31,6 +32,9 @@ export class DownloadTask extends BaseTask {
   }
 
   async downloadSource(source, totalItems) {
+    if (source._file && fs.existsSync(source._file)) {
+      return source;
+    }
     console.log('download source', source);
     const downloadUrl = new URL(source.downloadURL);
     const filePath = path.join(this.downloadDirectory, path.basename(downloadUrl.pathname));

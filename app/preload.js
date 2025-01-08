@@ -12,6 +12,21 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('courseterrain', {
   isWindows: process.platform === 'win32',
   isMac: process.platform === 'darwin',
+
+  searchCRSList: (query) => ipcRenderer.invoke('search-crs-list', query),
+  fetchCRSList: () => ipcRenderer.invoke('get-crs-list'),
+  cancelMetadata: () => {
+    return ipcRenderer.invoke('cancel-metadata');
+  },
+  getMetadata: async (dataSource) => {
+    return ipcRenderer.invoke('get-metadata', dataSource);
+  },
+  getBounds: (dataSource) => {
+    return ipcRenderer.invoke('get-bounds', dataSource);
+  },
+  importFiles: () => {
+    return ipcRenderer.invoke('import-files');
+  },
   folderReveal: (outputFolder) => {
     return ipcRenderer.invoke('reveal-folder', outputFolder);
   },

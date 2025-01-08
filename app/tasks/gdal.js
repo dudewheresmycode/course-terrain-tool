@@ -32,7 +32,7 @@ function getGDALCommand(binaryName) {
   ] : [gdalbin];
 }
 
-function runGDALCommand(binName, args, signal, onProgress) {
+export function runGDALCommand(binName, args, signal, onProgress) {
   let progress = 0;
   return new Promise((resolve, reject) => {
     const [bin, ...extraArgs] = getGDALCommand(binName);
@@ -46,16 +46,19 @@ function runGDALCommand(binName, args, signal, onProgress) {
     child.stderr.on('data', (data) => {
       log.info(`[${binName}]: ${data}`);
     });
+    let output = '';
     child.stdout.on('data', (data) => {
-      const log = data.toString().trim();
-      const int = parseInt(log, 10);
-      if (data.toString().trim() === '.') {
-        progress += 2;
-      } else if (int) {
-        progress = int;
-      }
       if (typeof onProgress === 'function') {
+        const log = data.toString().trim();
+        const int = parseInt(log, 10);
+        if (data.toString().trim() === '.') {
+          progress += 2;
+        } else if (int) {
+          progress = int;
+        }
         onProgress(progress);
+      } else {
+        output += data.toString();
       }
     });
     child.on('close', (exitCode) => {
@@ -63,9 +66,13 @@ function runGDALCommand(binName, args, signal, onProgress) {
       if (exitCode !== 0) {
         return reject(`Error running ${binName} command`);
       }
-      resolve();
+      resolve(output.trim());
     });
   });
+}
+
+export function getProjInfo(authority, code) {
+  return runGDALCommand(GDAL_BINARIES.projinfo, [[authority, code].join(':'), '-o', 'PROJ', '-q']);
 }
 
 export class GeoTiffStatsTask extends BaseTask {
@@ -179,13 +186,14 @@ export class GeoTiffToRaw extends BaseTask {
 }
 
 export class GenerateSatelliteImageryTask extends BaseTask {
-  constructor({ prefix, outputDirectory, coordinates }) {
+  constructor({ prefix, outputDirectory, coordinates, tasksEnabled }) {
     super();
     this.id = 'satellite';
     this.label = `Generating high quality satellite imagery for ${prefix}`;
     this.prefix = prefix;
     this.outputDirectory = outputDirectory;
     this.coordinates = coordinates;
+    this.tasksEnabled = tasksEnabled;
   }
 
   async process(data) {
@@ -193,7 +201,10 @@ export class GenerateSatelliteImageryTask extends BaseTask {
       data._outputFiles[this.prefix].satellite = {};
     }
 
-    for (const source of SatelliteSources) {
+
+    const activeSources = SatelliteSources.filter(source => this.tasksEnabled[source]);
+
+    for (const source of activeSources) {
       const destFile = path.join(this.outputDirectory, `${this.prefix}_sat_${source}.jpg`);
       const wmsSource = path.join(WmsDirectory, `${source}.xml`);
 

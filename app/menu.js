@@ -1,6 +1,8 @@
 import { app, Menu, ipcMain, shell } from 'electron';
 import pkg from '../package.json' with { type: 'json' };
 
+import importFiles from './import.js';
+
 const isMac = process.platform === 'darwin'
 
 const HelpUrl = 'https://ctt.opengolfsim.com';
@@ -56,12 +58,24 @@ export function buildMenu(webContents) {
       }]
       : []),
     // { role: 'fileMenu' }
-    ...!isMac ? [
-      {
-        label: 'File',
-        submenu: [{ role: 'quit' }]
-      }
-    ] : [],
+    {
+      label: 'File',
+      submenu: [
+        { label: 'Open Project...' },
+        { label: 'Save Project' },
+        { type: 'separator' },
+        {
+          label: 'Import LAZ/LAS file(s)',
+          click: async () => {
+            const files = await importFiles();
+            console.log('files', files);
+          }
+        },
+        // { label: 'Import GeoTIFF file(s)' },
+        // !isMac && { role: 'quit' }
+        ...!isMac ? [{ type: 'separator' }, { role: 'quit' }] : []
+      ]
+    },
     // {
     //   label: 'File',
     //   submenu: [

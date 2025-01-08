@@ -12,6 +12,10 @@ import { installDependencies } from './tools/installer.js';
 import { buildMenu } from './menu.js';
 // TODO: move and update imports when we kill server
 import { JobQueue } from './jobs.js';
+import importFiles from './import.js';
+import { getLAZInfo } from './tasks/pdal.js';
+import crsList from './crs-list.json' with { type: 'json' };
+import pMap from 'p-map';
 
 export const jobQueue = new JobQueue();
 
@@ -111,6 +115,8 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('submit-job', (event, jobData) => {
+    console.log('jobData', jobData);
+    // event.sender.send('job-progress', { step: 'something', label: 'Working on something' });
     const job = jobQueue.add(jobData);
     job.on('progress', progress => {
       console.log('progress', progress);
@@ -131,6 +137,71 @@ app.whenReady().then(async () => {
     await jobQueue.cancelJob();
   });
 
+  ipcMain.handle('import-files', async (event) => {
+    log.info('Importing files...');
+    const openEvent = await dialog.showOpenDialog({
+      title: 'Select files to import',
+      filters: [{ name: 'Point Cloud (LAZ/LAS)', extensions: ['laz', 'las'] }],
+      properties: ['openFile', 'multiSelections']
+    });
+    if (!openEvent.canceled && openEvent.filePaths.length) {
+      return openEvent.filePaths.map(file => ({
+        _file: file,
+        title: path.parse(file).name,
+        source: 'local'
+      }));
+    }
+    // return importFiles();
+  });
+
+  ipcMain.handle('get-crs-list', () => {
+    return crsList;
+  });
+  ipcMain.handle('search-crs-list', (event, query) => {
+    const parts = query.split(/[:\s\-_]/g);
+    return crsList.filter(option => {
+      return parts.some(part => {
+        const search = new RegExp(part, 'ig');
+        return search.test(option.auth_name) ||
+          search.test(option.code) ||
+          search.test(option.name);
+      });
+    });
+  });
+
+  let metadataSignal = new AbortController();
+  ipcMain.handle('cancel-metadata', async (event, items) => {
+    // metadataSignals.forEach(ctrl => ctrl.abort());
+    metadataSignal.abort();
+  });
+
+  ipcMain.handle('get-metadata', async (event, items) => {
+    // console.log('dataSources', items);
+    // const copy = [];
+
+    // metadataSignals.push(signal);
+    const copy = await pMap(items, async item => {
+      // const msignal = AbortSignal.timeout(5_000);
+      // msignal.addEventListener('abort', () => {
+      //   console.log('aborted');
+      //   event.sender.send('file-metadata', { ...item, ...info });
+      // }, { once: true });
+      try {
+        const info = await getLAZInfo(item, { signal: metadataSignal.signal, timeout: 30_000 });
+        console.log('received', info);
+        event.sender.send('file-metadata', { ...item, ...info });
+        return {
+          ...item,
+          ...info
+        }
+      } catch (error) {
+        log.error('error', error);
+        event.sender.send('file-metadata', { ...item, error: 'Error Fetching CRS' });
+      }
+    }, { concurrency: 4, signal: metadataSignal.signal }).catch(error => console.log(error));
+
+    return copy;
+  });
 });
 
 // Quit when all windows are closed

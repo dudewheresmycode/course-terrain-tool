@@ -25,7 +25,7 @@ const StyledListItem = styled(ListItem)({
   }
 });
 
-const OGSApiEndpoint = 'https://api.opengolfsim.com';
+const OGSApiEndpoint = process.env.REACT_APP_API_URL || 'https://api.opengolfsim.com';
 
 function SearchResultItem(props) {
   const handleSelectSource = useCallback(async () => {
