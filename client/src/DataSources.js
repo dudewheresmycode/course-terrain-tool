@@ -266,20 +266,7 @@ export default function DataSources(props) {
   return (
     <>
       <CustomList dense={true}>
-        {[
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-          ...props.dataSource.items,
-        ].map((item, index) =>
+        {props.dataSource.items.map((item, index) =>
         (<DataListItem
           item={item}
           key={index}
