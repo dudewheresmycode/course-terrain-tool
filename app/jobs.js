@@ -3,16 +3,6 @@ import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
 import log from 'electron-log';
 
-// import { lazToTiff } from './server/lib/steps/pdal.js';
-// import {
-//   fillNoData,
-//   getGeoTiffStats,
-//   geoTIFFHillShade,
-//   generateSatelliteForSource,
-//   geoTiffToRaw
-// } from './server/lib/steps/gdal.js';
-// import mkdirSafe from './utils/mkdirSafe.js';
-// import { tools } from './tools/index.js';
 
 import { CreateDirectoryTask } from './tasks/directory.js';
 import { DownloadTask } from './tasks/download.js';
@@ -26,12 +16,6 @@ import {
   GenerateHillShadeImageTask
 } from './tasks/gdal.js';
 
-
-// const SATELLITE_SOURCES = [
-//   'google',
-//   // 'bing'
-// ];
-
 const JobStates = {
   Queued: 'queued',
   Running: 'running',
@@ -39,10 +23,6 @@ const JobStates = {
   Error: 'error',
   Finished: 'finished'
 }
-
-// const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
-
 
 export class Job extends EventEmitter {
   constructor(data, outputFolder) {
@@ -60,12 +40,6 @@ export class Job extends EventEmitter {
 
   update() {
     this.emit('progress', this.progress);
-    // this.emit('progress', {
-    //   state: this.state,
-    //   data: this.data,
-    //   progress: this.progress,
-    //   ...this.error && { error: this.error }
-    // });
   }
 
   updateProgress({ id, label, percent }) {
