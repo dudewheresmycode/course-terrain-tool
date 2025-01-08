@@ -21,6 +21,14 @@ const theme = createTheme({
     secondary: {
       main: '#dddddd',
     },
+  },
+  typography: {
+    h5: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      textTransform: 'uppercase',
+      color: '#aaa'
+    }
   }
 });
 
@@ -28,6 +36,7 @@ const theme = createTheme({
 export default function App() {
   const [mapEditMode, setMapEditMode] = useState(false);
   const [dataSource, setDataSource] = useState();
+  const [zoomBounds, setZoomBounds] = useState();
   const [mapStyle, setMapStyle] = useState(0);
   const [distance, setDistance] = useState(2);
   const [outerDistance, setOuterDistance] = useState();
@@ -54,13 +63,14 @@ export default function App() {
     setMapStyle(newMapStyle);
   }, []);
 
+  const handleZoomBoundsChanged = useCallback((newZoomBounds) => {
+    setZoomBounds(newZoomBounds);
+  }, []);
+
   const toggleMapEditMode = (toggle) => {
     console.log('toggleMapEditMode', toggle);
     setMapEditMode(toggle);
     // setAnchorEl(null);
-  };
-  const handleDataSourceChanged = dataSource => {
-    setDataSource(dataSource);
   };
   const handleCoordinatesChange = coordinates => {
     console.log('handleCoordinatesChange', coordinates);
@@ -112,18 +122,18 @@ export default function App() {
               />
             </Box>
           </AppBar> */}
-          <Box sx={{ display: 'flex', flexGrow: 1, gap: 3 }}>
-            <Box sx={{ width: 300 }}>
-              <Sidebar
-                coordinates={coordinates}
-                distance={distance}
-                outerDistance={outerDistance}
-                dataSource={dataSource}
-                onDistanceChange={handleDistanceChanged}
-                onOuterChanged={handleOuterChanged}
-                onDataSourceChanged={handleDataSourceChanged}
-              />
-            </Box>
+          <Box sx={{ display: 'flex', flexGrow: 1 }}>
+            <Sidebar
+              sx={{ width: 300 }}
+              coordinates={coordinates}
+              distance={distance}
+              outerDistance={outerDistance}
+              dataSource={dataSource}
+              onDistanceChange={handleDistanceChanged}
+              onOuterChanged={handleOuterChanged}
+              onDataSourceChanged={setDataSource}
+              onZoomBoundsChanged={handleZoomBoundsChanged}
+            />
             <Box sx={{ flexGrow: 1 }}>
               <Map
                 distance={distance}
@@ -132,6 +142,7 @@ export default function App() {
                 dataSource={dataSource}
                 mapStyle={mapStyle}
                 mapEditMode={mapEditMode}
+                zoomBounds={zoomBounds}
                 onCoordinatesChanged={handleCoordinatesChange}
               />
             </Box>

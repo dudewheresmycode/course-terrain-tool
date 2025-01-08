@@ -1,23 +1,24 @@
-// Modules to control application life and create native browser window
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
-// import express from 'express';
 import log from 'electron-log';
 import electronUpdater from 'electron-updater';
 
 import './utils/startup.js';
-// import { app as server } from './server/index.js';
+
 import { verifyDependencies } from './tools/index.js';
 import { installDependencies } from './tools/installer.js';
 import { buildMenu } from './menu.js';
-// TODO: move and update imports when we kill server
+
 import { JobQueue } from './jobs.js';
+import { getLAZInfo } from './tasks/pdal.js';
+import crsList from './crs-list.json' with { type: 'json' };
+import pMap from 'p-map';
 
 export const jobQueue = new JobQueue();
 
 const PORT = process.env.PORT || 3133;
 
-// initializes the logger for any renderer process
+// initializes the logger for any renderer process?
 log.initialize();
 
 // initialize the auto-updater
@@ -111,17 +112,18 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('submit-job', (event, jobData) => {
+    log.debug('Submitting job with data:', jobData);
     const job = jobQueue.add(jobData);
     job.on('progress', progress => {
-      console.log('progress', progress);
+      log.info('Job Progress', progress);
       event.sender.send('job-progress', progress);
     });
     job.on('error', error => {
-      console.log('error', error);
+      log.error('Job Error', error);
       event.sender.send('job-error', error);
     });
     job.on('finished', data => {
-      console.log('finished', data);
+      log.info('Job Finished', data);
       event.sender.send('job-finished', data);
     });
   });
@@ -131,25 +133,65 @@ app.whenReady().then(async () => {
     await jobQueue.cancelJob();
   });
 
+  ipcMain.handle('import-files', async (event) => {
+    log.info('Importing files...');
+    const openEvent = await dialog.showOpenDialog({
+      title: 'Select files to import',
+      filters: [{ name: 'Point Cloud (LAZ/LAS)', extensions: ['laz', 'las'] }],
+      properties: ['openFile', 'multiSelections']
+    });
+    if (!openEvent.canceled && openEvent.filePaths.length) {
+      return openEvent.filePaths.map(file => ({
+        _file: file,
+        title: path.parse(file).name,
+        source: 'local'
+      }));
+    }
+  });
+
+  ipcMain.handle('get-crs-list', () => {
+    return crsList;
+  });
+  ipcMain.handle('search-crs-list', (event, query) => {
+    const parts = query.split(/[:\s\-_]/g);
+    return crsList.filter(option => {
+      return parts.some(part => {
+        const search = new RegExp(part, 'ig');
+        return search.test(option.auth_name) ||
+          search.test(option.code) ||
+          search.test(option.name);
+      });
+    });
+  });
+
+  let metadataSignal = new AbortController();
+  ipcMain.handle('cancel-metadata', async (event, items) => {
+    // metadataSignals.forEach(ctrl => ctrl.abort());
+    metadataSignal.abort();
+  });
+
+  ipcMain.handle('get-metadata', async (event, items) => {
+    const copy = await pMap(items, async item => {
+      try {
+
+        const info = await getLAZInfo(item, { signal: metadataSignal.signal, timeout: 30_000 });
+        event.sender.send('file-metadata', { ...item, ...info });
+
+        return {
+          ...item,
+          ...info
+        }
+      } catch (error) {
+        log.error('error', error);
+        event.sender.send('file-metadata', { ...item, error: 'Error Fetching CRS' });
+      }
+    }, { concurrency: 4, signal: metadataSignal.signal }).catch(error => log.error(error));
+
+    return copy;
+  });
 });
 
 // Quit when all windows are closed
 app.on('window-all-closed', function () {
   app.quit();
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
-
-// function startServer() {
-//   return new Promise(resolve => {
-//     const distPath = path.resolve(app.getAppPath(), './client/dist');
-//     server.use(express.static(distPath));
-//     server.get('/', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
-
-//     server.listen(PORT, () => {
-//       log.info(`Server running at http://localhost:${PORT}`);
-//       resolve();
-//     });
-//   });
-// }

@@ -1,7 +1,7 @@
 {
   "name": "course-terrain-tool",
   "productName": "Course Terrain Tool",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "An open source tool to find and process terrain data for use in the OPCD golf course design process",
   "author": {
     "name": "dudewheresmycode",
@@ -35,7 +35,7 @@
     ]
   },
   "scripts": {
-    "tag:version": "package-version-git-tag --push --verbose",
+    "release": "package-version-git-tag --push --verbose",
     "start": "electron .",
     "app:debug": "DEBUG=electron-builder electron-builder --dir",
     "app:dir": "electron-builder --dir",
@@ -66,7 +66,8 @@
     "electron-updater": "^6.3.9",
     "express": "^4.21.2",
     "express-ws": "^5.0.2",
-    "p-map": "^7.0.3"
+    "p-map": "^7.0.3",
+    "proj4": "^2.15.0"
   },
   "volta": {
     "node": "20.18.1",

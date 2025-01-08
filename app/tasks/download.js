@@ -2,12 +2,16 @@ import fs from 'fs';
 import pMap from 'p-map';
 import path from 'path';
 import axios from 'axios';
+import log from 'electron-log';
 
 import BaseTask from './base.js';
 
 // utils
 
 async function fetchFileSize(source) {
+  if (source._file && fs.existsSync(source._file)) {
+    return source;
+  }
   // since we stream to the local file, axios enables chunked transfer encoding removing the content-length from the header
   // so we do a quick head object to get total filesize first
   const res = await fetch(source.downloadURL, { method: 'HEAD' });
@@ -17,8 +21,6 @@ async function fetchFileSize(source) {
   }
   return source;
 }
-
-
 
 export class DownloadTask extends BaseTask {
   constructor({
@@ -31,7 +33,10 @@ export class DownloadTask extends BaseTask {
   }
 
   async downloadSource(source, totalItems) {
-    console.log('download source', source);
+    if (source._file && fs.existsSync(source._file)) {
+      return source;
+    }
+    log.debug(`Downloading file: ${source.downloadURL}`);
     const downloadUrl = new URL(source.downloadURL);
     const filePath = path.join(this.downloadDirectory, path.basename(downloadUrl.pathname));
     if (fs.existsSync(filePath)) {
@@ -53,7 +58,6 @@ export class DownloadTask extends BaseTask {
           lastLoaded = progressEvent.loaded;
           const percent = ((this.totalBytesDownloaded / this.totalBytesToDownload) * 100);
           const label = `Downloading ${totalItems} lidar data files (${percent.toFixed(1)}%)`;
-          console.log(`this.totalBytesDownloaded: ${this.totalBytesDownloaded}, ${this.totalBytesToDownload}`);
           this.emit('progress', label, percent);
         }
       }
@@ -68,7 +72,6 @@ export class DownloadTask extends BaseTask {
       });
       outputStream.on('close', () => {
         if (!error) {
-          console.log('finished downloading file');
           resolve({
             ...source,
             _file: filePath

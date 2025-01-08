@@ -27,12 +27,12 @@ const OUTER_ID = 'outer_bounds';
 const OUTER_ID_FILL = 'outer_bounds_f';
 const OUTER_ID_OUTLINE = 'outer_bounds_o';
 const BASE_LAYERS = [INNER_ID_FILL, INNER_ID_OUTLINE, OUTER_ID_FILL, OUTER_ID_OUTLINE];
-const DT_SOURCE_PREFIX = 'data_tile';
-const DT_LAYER_PREFIX = 'data_layer';
+const DT_SOURCE_PREFIX = 'ds-tile';
+const DT_LAYER_PREFIX = 'ds-layer';
 
 const INNER_COLOR = '#fc4a03';
 const OUTER_COLOR = '#0080ff';
-const TILE_COLOR = '#eeeeee';
+const TILE_COLOR = '#fce700';
 
 export const MapStyleURIs = [
   { uri: 'mapbox://styles/mapbox/satellite-streets-v12', label: 'Satellite (streets)' },
@@ -60,6 +60,7 @@ function lngLatToPolygon(lng, lat) {
     llb.getNorthWest().toArray(),
   ];
 }
+
 
 export default function Map(props) {
   const mapElement = useRef(null);
@@ -177,14 +178,14 @@ export default function Map(props) {
     const style = mapInstance.current.getStyle();
     style.layers.forEach(layer => {
       if (layer.id.startsWith(DT_LAYER_PREFIX)) {
-        console.log(`layer.id: ${layer.id}`);
         mapInstance.current.removeLayer(layer.id);
-        mapInstance.current.removeLayer(`${layer.id}o`);
+        // mapInstance.current.removeLayer(`${layer.id}o`);
       }
     });
 
     Object.keys(style.sources).forEach(sourceId => {
       if (sourceId.startsWith(DT_SOURCE_PREFIX)) {
+        console.log(`found source: ${sourceId}`);
         mapInstance.current.removeSource(sourceId);
         // console.log(`remove raster source: ${sourceId}`);
         // mapInstance.current.removeSource(sourceId);
@@ -200,61 +201,99 @@ export default function Map(props) {
       // remove any existing layers/sources
       removeDataTiles();
       props.dataSource.items.forEach((item, index) => {
-        const sourceId = `${DT_SOURCE_PREFIX}${index}`;
-        const layerId = `${DT_LAYER_PREFIX}${index}`;
-        const coordinates = [
-          [item.boundingBox.minX, item.boundingBox.maxY],
-          [item.boundingBox.maxX, item.boundingBox.maxY],
-          [item.boundingBox.maxX, item.boundingBox.minY],
-          [item.boundingBox.minX, item.boundingBox.minY],
-        ];
-        mapInstance.current.addSource(sourceId, {
-          'type': 'image',
-          'url': item.previewGraphicURL,
-          coordinates
-        });
-        mapInstance.current.addLayer({
-          id: layerId,
-          'type': 'raster',
-          'source': sourceId,
-          'slot': 'data_source',
-          'paint': {
-            'raster-opacity': 0.7,
-            'raster-fade-duration': 0
-          }
-        });
+        const sourceId = `${DT_SOURCE_PREFIX}-${index}`;
+        const layerId = `${DT_LAYER_PREFIX}-${index}`;
+        const geoJSONSourceId = `${sourceId}-json`;
 
-        mapInstance.current.addSource(`${sourceId}p`, {
-          'type': 'geojson',
-          'data': {
+        const rasterLayerId = `${layerId}-img`;
+        const lineLayerId = `${layerId}-line`;
+        const fillLayerId = `${layerId}-fill`;
+        // const tileLayers = [rasterLayerId, layerId, lineLayerId, fillLayerId];
+
+        let fillLayer;
+        let geoJSONData = {};
+
+        if (item.boundingBox) {
+          // USGS uses boundingBox (we should convert to bbox in our API)
+          // TODO: convert to the new system that imports use
+          const coordinates = [
+            [item.boundingBox?.minX, item.boundingBox?.maxY],
+            [item.boundingBox?.maxX, item.boundingBox?.maxY],
+            [item.boundingBox?.maxX, item.boundingBox?.minY],
+            [item.boundingBox?.minX, item.boundingBox?.minY],
+          ];
+
+          mapInstance.current.addSource(sourceId, {
+            'type': 'image',
+            'url': item.previewGraphicURL,
+            coordinates
+          });
+
+          mapInstance.current.addLayer({
+            id: rasterLayerId,
+            beforeId: BASE_LAYERS[0],
+            'type': 'raster',
+            'source': sourceId,
+            'slot': 'data_source',
+            'paint': {
+              'raster-opacity': 0.4,
+              'raster-fade-duration': 0
+            }
+          });
+
+          geoJSONData = {
             'type': 'Feature',
             'geometry': {
               'type': 'Polygon',
-              // These coordinates outline Maine.
-              'coordinates': [[...coordinates, [item.boundingBox.minX, item.boundingBox.minY]]]
+              'coordinates': [[...coordinates, coordinates[0]]]
             }
-          }
-        });
-        mapInstance.current.addLayer({
-          'id': `${layerId}o`,
-          'type': 'line',
-          'slot': 'data_source',
-          'source': `${sourceId}p`,
-          'layout': {},
-          'paint': {
-            'line-color': TILE_COLOR,
-            'line-width': 2,
-            'line-opacity': 0.2
-          }
-        });
+          };
+        } else {
+          geoJSONData = item?.bbox?.boundary;
+        }
 
-        BASE_LAYERS.forEach(baseLayerId => {
-          mapInstance.current.moveLayer(baseLayerId, layerId);
-          mapInstance.current.moveLayer(baseLayerId, `${layerId}o`);
-        });
+
+        console.log('geoJSONData', geoJSONData);
+        // add polygon for geoJSON
+        if (geoJSONData) {
+          mapInstance.current.addSource(geoJSONSourceId, {
+            'type': 'geojson',
+            'data': geoJSONData
+          });
+
+
+          mapInstance.current.addLayer({
+            'id': lineLayerId,
+            'type': 'line',
+            'slot': 'data_source',
+            'source': geoJSONSourceId,
+            'paint': {
+              'line-color': TILE_COLOR,
+              'line-width': 2,
+              'line-opacity': 0.5
+            }
+          });
+
+          mapInstance.current.addLayer({
+            'id': fillLayerId,
+            'type': 'fill',
+            'source': geoJSONSourceId,
+            'paint': {
+              'fill-color': TILE_COLOR,
+              'fill-opacity': 0.2,
+            }
+          }, BASE_LAYERS[0]);
+        }
+
+        // BASE_LAYERS.forEach(baseLayerId => {
+        //   tileLayers.forEach(tlId => {
+        //     console.log(`baseLayer: ${baseLayerId}, tileLayer:${tlId}`);
+        //     mapInstance.current.moveLayer(baseLayerId, tlId);
+        //   });
+        // });
 
       });
-      console.log('shift', mapInstance.current.getStyle().layers);
+      // console.log('shift', mapInstance.current.getStyle().layers);
 
     }
 
@@ -310,7 +349,7 @@ export default function Map(props) {
         'fill-opacity': 0.1
       }
     });
-    // Add a black outline around the polygon.
+
     mapInstance.current.addLayer({
       'id': OUTER_ID_OUTLINE,
       'type': 'line',
@@ -318,7 +357,7 @@ export default function Map(props) {
       'layout': {},
       'paint': {
         'line-color': OUTER_COLOR,
-        'line-width': 1
+        'line-width': 3
       }
     });
 
@@ -338,7 +377,7 @@ export default function Map(props) {
       'type': 'line',
       'source': INNER_ID,
       'layout': {},
-      'paint': { 'line-color': INNER_COLOR, 'line-width': 1 }
+      'paint': { 'line-color': INNER_COLOR, 'line-width': 3 }
     });
 
   }, [innerCoordinates, centerPosition]);
@@ -371,6 +410,18 @@ export default function Map(props) {
       // removeDataTiles();
     }
   }, [props.dataSource]);
+
+  useEffect(() => {
+    if (!mapInstance.current || !props.zoomBounds) {
+      return;
+    }
+    console.log('ZOOM TO', props.zoomBounds);
+    mapInstance.current.fitBounds(props.zoomBounds, {
+      padding: 50,
+      duration: 2500
+    });
+
+  }, [props.zoomBounds]);
 
   useEffect(() => {
     (async () => {

@@ -25,7 +25,7 @@ const StyledListItem = styled(ListItem)({
   }
 });
 
-const OGSApiEndpoint = 'https://api.opengolfsim.com';
+const OGSApiEndpoint = process.env.REACT_APP_API_URL || 'https://api.opengolfsim.com';
 
 function SearchResultItem(props) {
   const handleSelectSource = useCallback(async () => {
@@ -127,10 +127,10 @@ export default function SearchDialog(props) {
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>
         ) : (
           <List>
-            {results ? results.map(
+            {results?.length > 0 ? results.map(
               (result, index) =>
                 <SearchResultItem onSelect={props.onSelect} result={result} key={index} />
-            ) : null
+            ) : <Box sx={{ textAlign: 'center', pt: 5, color: 'text.secondary' }}>No data found</Box>
             }
           </List>
         )}

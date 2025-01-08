@@ -43,13 +43,18 @@ export default function DistanceInput(props) {
   };
 
   return (
-    <FakeInput sx={{display: 'flex', flexDirection: 'row', alignItems: 'center', ...props.optional && { pl: 0 } }}>
+    <FakeInput sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', ...props.optional && { pl: 0 } }}>
       {props.optional ? (
         <Box>
-          <Checkbox size="small" checked={distanceEnabled} onChange={handleChecked} />
+          <Checkbox
+            size="small"
+            disabled={props.disabled}
+            checked={distanceEnabled}
+            onChange={handleChecked}
+          />
         </Box>
       ) : null}
-      <Box sx={{flex: 1, display: 'flex', alignItems: 'center', width: 250, pr: 3 }}>
+      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', width: 250, pr: 3 }}>
         <Slider
           min={props.min || 0.1}
           step={0.05}
