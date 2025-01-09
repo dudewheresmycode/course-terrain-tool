@@ -44,7 +44,7 @@ export function runPDALCommand(command, args, abortController, stdinData) {
       } : {}
     });
     child.stderr.on('data', data => {
-      log.debug(`[pdal.stderr]: ${data}`);
+      log.info(`[pdal.stderr]: ${data}`);
     });
     let response = '';
     child.stdout.on('data', data => {
@@ -289,7 +289,7 @@ export class RasterizeLAZTask extends BaseTask {
           {
             type: 'filters.crop',
             a_srs: 'EPSG:4326',
-            polygon: coordinatesToPolygon(this.coordinates)
+            polygon: coordinatesToPolygon(this.coordinates),
           }
         ] : [],
         {
@@ -354,8 +354,8 @@ export class MergeLAZTask extends BaseTask {
           return {
             type: 'readers.las',
             filename: item._file,
-            // force the user set CRS
-            ...item.crs.source === 'user' ? { override_srs: inputSRS } : {}
+            // force the CRS if we didn't detect it from the laz
+            ...item.crs.source !== 'laz' ? { override_srs: inputSRS } : {}
           }
         }),
         // TODO: move the filtering to a separate step
@@ -406,6 +406,7 @@ export class MergeLAZTask extends BaseTask {
       ]
     };
 
+    log.info('Running PDAL pipeline: ', pipeline);
     await runPDALCommand('pipeline', [], this.abortController, pipeline);
 
     data._outputFiles.las = lazOutputFile;
