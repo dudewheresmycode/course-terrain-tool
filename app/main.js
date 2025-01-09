@@ -166,7 +166,6 @@ app.whenReady().then(async () => {
 
   let metadataSignal = new AbortController();
   ipcMain.handle('cancel-metadata', async (event, items) => {
-    // metadataSignals.forEach(ctrl => ctrl.abort());
     metadataSignal.abort();
   });
 
@@ -174,7 +173,7 @@ app.whenReady().then(async () => {
     const copy = await pMap(items, async item => {
       try {
 
-        const info = await getLAZInfo(item, { signal: metadataSignal.signal, timeout: 30_000 });
+        const info = await getLAZInfo(item, { signal: metadataSignal.signal, timeout: 20_000 });
         event.sender.send('file-metadata', { ...item, ...info });
 
         return {

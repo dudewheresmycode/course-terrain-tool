@@ -32,7 +32,8 @@ function getGDALCommand(binaryName) {
   ] : [gdalbin];
 }
 
-export function runGDALCommand(binName, args, signal, onProgress) {
+export function runGDALCommand(binName, args, options = {}) {
+  const { signal, onProgress, env } = options;
   let progress = 0;
   return new Promise((resolve, reject) => {
     const [bin, ...extraArgs] = getGDALCommand(binName);
@@ -42,7 +43,7 @@ export function runGDALCommand(binName, args, signal, onProgress) {
     const child = spawn(bin, [
       ...extraArgs,
       ...args
-    ], { signal });
+    ], { signal, env });
     child.stderr.on('data', (data) => {
       log.info(`[${binName}]: ${data}`);
     });
@@ -142,7 +143,7 @@ export class GeoTiffFillNoDataTask extends BaseTask {
       // '-interp', 'nearest',
       inputFile, destFile
     ];
-    await runGDALCommand(GDAL_BINARIES.gdal_fillnodata, args, this.abortController.signal, onProgress);
+    await runGDALCommand(GDAL_BINARIES.gdal_fillnodata, args, { signal: this.abortController.signal, onProgress });
 
     // remove the previous temporary tiff?
     // await fs.promises.unlink(data._outputFiles[this.prefix].tiff);
@@ -179,7 +180,7 @@ export class GeoTiffToRaw extends BaseTask {
       '-r', 'bilinear',
       inputFile,
       destFile
-    ], this.abortController.signal);
+    ], { signal: this.abortController.signal });
 
     data._outputFiles[this.prefix].raw = destFile;
   }
@@ -189,8 +190,8 @@ export class GenerateSatelliteImageryTask extends BaseTask {
   constructor({ prefix, outputDirectory, coordinates, tasksEnabled }) {
     super();
     this.id = 'satellite';
-    this.label = `Generating high quality satellite imagery for ${prefix}`;
     this.prefix = prefix;
+    this.label = `Initializing ${this.prefix} satellite imagery task`;
     this.outputDirectory = outputDirectory;
     this.coordinates = coordinates;
     this.tasksEnabled = tasksEnabled;
@@ -205,6 +206,8 @@ export class GenerateSatelliteImageryTask extends BaseTask {
     const activeSources = SatelliteSources.filter(source => this.tasksEnabled[source]);
 
     for (const source of activeSources) {
+      this.label = `Grabbing ${this.prefix} satellite imagery from ${source}`;
+
       const destFile = path.join(this.outputDirectory, `${this.prefix}_sat_${source}.jpg`);
       const wmsSource = path.join(WmsDirectory, `${source}.xml`);
 
@@ -223,12 +226,22 @@ export class GenerateSatelliteImageryTask extends BaseTask {
         '-r', 'cubic',
         '-co', 'QUALITY=95',
 
+        // override output projection to match our input lidar data
+        '-a_srs', data._inputSRS,
         // Question: Do we want the higher quality GeoTiff output?
         // '-of', 'GTiff',
         '-outsize', '8192', '8192',
         wmsSource,
         destFile
-      ], this.abortController.signal);
+      ], {
+        signal: this.abortController.signal,
+        env: {
+          GDAL_DEFAULT_WMS_CACHE_PATH: app.getPath('temp'),
+          GDAL_HTTP_MAX_RETRY: 3,
+          GDAL_HTTP_RETRY_DELAY: 2,
+          GDAL_HTTP_SSL_VERIFYSTATUS: 'NO'
+        }
+      });
 
       data._outputFiles[this.prefix].satellite[source] = destFile;
     }
@@ -249,7 +262,12 @@ export class GenerateHillShadeImageTask extends BaseTask {
       throw new Error('Missing TIFF generated in previous pipeline step');
     }
     const destFile = path.join(this.outputDirectory, 'hillshade.jpg');
-    await runGDALCommand(GDAL_BINARIES.gdaldem, ['hillshade', '-compute_edges', sourceFile, destFile], this.abortController.signal);
+    await runGDALCommand(GDAL_BINARIES.gdaldem, [
+      'hillshade',
+      '-compute_edges',
+      sourceFile,
+      destFile
+    ], { signal: this.abortController.signal });
     data._outputFiles.hillshade = destFile;
   }
 }

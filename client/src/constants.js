@@ -1,0 +1,1 @@
+export const OGSApiEndpoint = process.env.REACT_APP_API_URL || 'https://api.opengolfsim.com';

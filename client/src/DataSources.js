@@ -155,7 +155,7 @@ function DataListItem(props) {
         }
         slotProps={{
           primary: { whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' },
-          secondary: { component: 'div' }
+          secondary: { whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', component: 'div' }
         }}
       />
       <IconButton disabled={item._pending} onClick={handleMenuClick} size="small">

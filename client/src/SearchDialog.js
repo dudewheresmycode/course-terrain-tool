@@ -18,6 +18,8 @@ import { styled } from '@mui/material';
 import Chip from '@mui/material/Chip';
 import Badge from '@mui/material/Badge';
 
+import { OGSApiEndpoint } from './constants.js';
+
 const StyledListItem = styled(ListItem)({
   padding: 0,
   '.MuiListItemButton-root': {
@@ -25,7 +27,7 @@ const StyledListItem = styled(ListItem)({
   }
 });
 
-const OGSApiEndpoint = process.env.REACT_APP_API_URL || 'https://api.opengolfsim.com';
+// const OGSApiEndpoint = process.env.REACT_APP_API_URL || 'https://api.opengolfsim.com';
 
 function SearchResultItem(props) {
   const handleSelectSource = useCallback(async () => {

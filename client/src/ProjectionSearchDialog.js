@@ -9,8 +9,9 @@ import Autocomplete from '@mui/material/Autocomplete';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
-
 import { DialogActions } from '@mui/material';
+
+import { OGSApiEndpoint } from './constants.js';
 
 function sleep(duration) {
   return new Promise((resolve) => {
@@ -26,6 +27,14 @@ export default function ProjectionSearchDialog(props) {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState();
+  let timer;
+
+  // function debounce(func, timeout = 3000) {
+  //   window.clearTimeout(timer);
+  //   return (...args) => {
+  //     timer = window.setTimeout(func, timeout, ...args);
+  //   }
+  // }
 
   const handleOpen = () => {
     setOpen(true);
@@ -40,34 +49,41 @@ export default function ProjectionSearchDialog(props) {
     // })();
   };
 
-  const handleChanged = async (e) => {
+  const debouncedChangedHandler = useCallback(event => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(handleChanged, 1000, event);
+    // debounce(handleChanged, 1000, ...args);
+  }, []);
+
+  const handleChanged = useCallback(async (e) => {
     const query = e.target.value;
     console.log(`query`, query);
     if (query) {
       setLoading(true);
-      const list = await window.courseterrain.searchCRSList(query);
-      console.log(list);
-      setOptions(list);
+      const res = await fetch(`${OGSApiEndpoint}/csr/search?${new URLSearchParams({ query })}`).then(res => res.json());
+      // const list = await window.courseterrain.searchCRSList(query);
+      console.log(res);
+      setOptions(res.results);
       setLoading(false);
     }
 
-  };
+  }, []);
   const handleClose = () => {
     setOpen(false);
     setOptions([]);
   };
 
   const handleSelected = useCallback((event, change) => {
-    console.log(`event`, change, updateAll);
     if (change) {
+      const { name, id, unit } = change;
+      console.log('change', change);
       const crs = {
-        name: change.name.split('/')[0].trim(),
         source: 'user',
-        id: {
-          authority: change.auth_name,
-          code: parseInt(change.code, 10)
-        }
+        name,
+        id,
+        unit
       };
+      console.log('NEW CSR', crs);
       setSelectedOption(crs);
     }
   }, []);
@@ -94,12 +110,13 @@ export default function ProjectionSearchDialog(props) {
             onOpen={handleOpen}
             onClose={handleClose}
             onChange={handleSelected}
-            onInputChange={handleChanged}
+            onInputChange={debouncedChangedHandler}
+            filterOptions={(x) => x}
             fullWidth={true}
             openOnFocus={false}
-            isOptionEqualToValue={(option, value) => `${option.auth_name}:${option.code}`}
-            getOptionLabel={(option) => `${option.auth_name}:${option.code} ${option.name}`}
-            getOptionKey={(option) => `${option.auth_name}:${option.code}`}
+            isOptionEqualToValue={(option, value) => `${option.id.authority}:${option.id.code}`}
+            getOptionLabel={(option) => `${option.id.authority}:${option.id.code} ${option.name}`}
+            getOptionKey={(option) => `${option.id.authority}:${option.id.code}`}
             options={options}
             loading={loading}
             renderInput={(params) => (

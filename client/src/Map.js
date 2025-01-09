@@ -17,8 +17,9 @@ const MapElement = styled(Box)({
   }
 });
 
-const MAP_START_POINT = [-95.231830, 39.176370]; // random center of US
-const MAP_START_ZOOM = 4;
+// const MAP_START_POINT = [-95.231830, 39.176370]; // random center of US
+const MAP_START_POINT = [-79.39861795243577, 35.16273552708071]; // random center of US
+const MAP_START_ZOOM = 14;
 
 const INNER_ID = 'inner_bounds';
 const INNER_ID_FILL = 'inner_bounds_f';
@@ -415,7 +416,6 @@ export default function Map(props) {
     if (!mapInstance.current || !props.zoomBounds) {
       return;
     }
-    console.log('ZOOM TO', props.zoomBounds);
     mapInstance.current.fitBounds(props.zoomBounds, {
       padding: 50,
       duration: 2500
