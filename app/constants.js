@@ -18,5 +18,4 @@ export const GDAL_BINARIES = {
   projinfo: 'projinfo',
 };
 
-// export const OGSApiEndpoint = process.env.REACT_APP_API_URL || 'https://api.opengolfsim.com';
-export const OGSApiEndpoint = 'http://localhost:3131';
+export const OGSApiEndpoint = process.env.OGS_API_URL || 'https://api.opengolfsim.com';
