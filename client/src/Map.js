@@ -38,8 +38,6 @@ export const MapStyleURIs = [
   { uri: 'mapbox://styles/mapbox/satellite-streets-v12', label: 'Satellite (streets)' },
   { uri: 'mapbox://styles/mapbox/satellite-v9', label: 'Satellite (image only)' },
   { uri: 'mapbox://styles/mapbox/standard', label: 'Standard' },
-  // SatelliteImage: 'mapbox://styles/mapbox/satellite-v9',
-  // Street: 'mapbox://styles/mapbox/standard',
 ];
 
 function addKilometers(lngLat, kilometers) {
@@ -99,6 +97,7 @@ export default function Map(props) {
       // markerInstance.current.removeSource(coords);
       return;
     }
+    console.log('coords', JSON.stringify(coords));
     source.setData({
       'type': 'Feature',
       'geometry': {

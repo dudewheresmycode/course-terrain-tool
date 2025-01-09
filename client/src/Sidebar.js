@@ -397,7 +397,7 @@ export default function Sidebar(props) {
             disabled={!props.coordinates || !props.dataSource || isMetadataPending}
             onClick={handleJobSubmit}
           >
-            Create Terrain Files
+            Export Files
           </Button>
         </Box>
 
