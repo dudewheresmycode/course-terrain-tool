@@ -154,7 +154,6 @@ async function scrapeCRSFromXML(item) {
 }
 
 async function refreshBounds(item) {
-  console.log('refresh bounds', item.crs);
   if (!item?.crs?.id || !item?.bbox?.coordinates) {
     return {};
   }
@@ -180,11 +179,9 @@ export async function getLAZInfo(item, abortController) {
   // we skip the PDAL info command if we already grabbed the metadata once and just need to reproject the box
   if (item.crs?.source === 'user') {
     const refresh = await refreshBounds(item);
-    console.log('refreshed', refresh);
     item.crs.proj4 = refresh.proj4;
     item.bbox.boundary = refresh.boundary;
     // const proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
-    console.log('user set', item);
     return item;
     // item.crs.proj4 = proj4;
     // const newBounds = reprojectBounds(proj4, ...item.bbox.coordinates);
@@ -214,7 +211,6 @@ export async function getLAZInfo(item, abortController) {
 
   const projectedCRS = infoResponse?.metadata?.srs?.json?.components?.find(c => c.type === 'ProjectedCRS');
   if (projectedCRS) {
-    console.log('found CRS', projectedCRS);
     crs = {
       unit: infoResponse?.metadata?.srs?.units,
       name: projectedCRS.base_crs.name,
@@ -254,15 +250,12 @@ export async function getLAZInfo(item, abortController) {
     // scraping it from the USGS metadata
     const scraped = await scrapeCRSFromXML(item);
     if (scraped) {
-      console.log('scraped', scraped);
       returnValue.crs = scraped;
-      console.log('ite')
       const { boundary, proj4 } = await refreshBounds({ ...item, crs: scraped });
       returnValue.bbox.boundary = boundary;
       returnValue.crs.proj4 = proj4;
     }
   }
-  console.log('returnValue', returnValue);
   return returnValue;
 }
 
