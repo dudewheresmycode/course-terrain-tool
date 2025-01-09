@@ -34,6 +34,7 @@ export default function Sidebar(props) {
   const [isJobFinished, setIsJobFinished] = useState(false);
   const [isJobCanceled, setIsJobCanceled] = useState(false);
   const [jobError, setJobError] = useState();
+  const [jobWarnings, setJobWarnings] = useState();
   const [isMetadataPending, setIsMetadataPending] = useState(false);
 
   const ws = useRef(null);
@@ -58,6 +59,7 @@ export default function Sidebar(props) {
     setJobError(false);
     setIsJobCanceled(false);
     setJobState(null);
+    setJobWarnings(undefined);
   }
 
   const handleSearchClick = useCallback(() => {
@@ -249,9 +251,15 @@ export default function Sidebar(props) {
     await window.courseterrain.cancelJob();
     setIsJobCanceled(true);
     setJobDialogOpen(false);
+    setJobWarnings(undefined);
     // setProgressDialogOpen(false);
   }
-  const handleJobFinished = () => {
+  const handleJobFinished = (event, data) => {
+    // pipelineWarnings
+    if (data.warnings?.length) {
+      console.warn(...data.warnings);
+      setJobWarnings(data.warnings);
+    }
     setIsJobFinished(true);
   }
   const handleJobError = (_, error) => {
@@ -410,6 +418,7 @@ export default function Sidebar(props) {
         jobState={currentJobState}
         isFinished={isJobFinished}
         jobError={jobError}
+        jobWarnings={jobWarnings}
         onCancel={handleJobCancel}
         onClose={handleJobDialogClose}
       />

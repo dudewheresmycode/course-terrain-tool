@@ -415,7 +415,6 @@ export default function Map(props) {
     if (!mapInstance.current || !props.zoomBounds) {
       return;
     }
-    console.log('ZOOM TO', props.zoomBounds);
     mapInstance.current.fitBounds(props.zoomBounds, {
       padding: 50,
       duration: 2500

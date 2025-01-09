@@ -179,6 +179,8 @@ export class Job extends EventEmitter {
 
     ].filter(Boolean);
 
+    let pipelineError;
+    const pipelineWarnings = [];
     // let previousTaskOutput;
     for (const task of taskPipeline) {
       this.activeTask = task;
@@ -190,19 +192,30 @@ export class Job extends EventEmitter {
       log.info(`Running task ${task.id}`);
       this.updateProgress({ id: task.id, label: task.label || `Running the task ${task.id}` });
       // run task
-      await task.process(this.data);
+      try {
+        await task.process(this.data);
+        const take = Date.now() - started;
+        log.info(`Finished task ${task.id} in ${(take / 1000).toFixed(2)} seconds`);
 
-      const take = Date.now() - started;
-      log.info(`Finished task ${task.id} in ${(take / 1000).toFixed(2)} seconds`);
-
-      if (this.state === JobStates.Canceled || task.exitOnComplete) {
-        break;
+        if (this.state === JobStates.Canceled || task.exitOnComplete) {
+          break;
+        }
+      } catch (error) {
+        if (task.warnOnError === true) {
+          log.error(`[${task.id}] Task warning!`, error.message);
+          pipelineWarnings.push(`${error.message}`);
+          continue;
+        }
+        log.error(`[${task.id}] Task error!`, error.message);
+        pipelineError = error;
+        this.emit('error', { ...this.data, error: pipelineError });
+        return;
       }
     }
 
-    if (this.state === JobStates.Running) {
+    if (!pipelineError && this.state === JobStates.Running) {
       log.info('finished?');
-      this.emit('finished', this.data);
+      this.emit('finished', { ...this.data, warnings: pipelineWarnings });
     }
 
   }

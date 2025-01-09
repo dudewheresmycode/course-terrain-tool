@@ -2,12 +2,16 @@ import path from 'node:path';
 import log from 'electron-log';
 import { spawn } from 'node:child_process';
 import proj4 from 'proj4';
+import { create as xmlToObject } from 'xmlbuilder2';
 
 import BaseTask from './base.js';
 import { tools } from '../tools/index.js';
+import { OGSApiEndpoint } from '../constants.js';
 import { getProjInfo } from './gdal.js';
+import crsList from '../crs-list.json' with { type: 'json' };
 
 // the projection that our map and course/crop area uses
+export const Common = '+proj=longlat +datum=WGS84 +no_defs +type=crs';
 export const CommonProjection = '+proj=longlat +datum=WGS84 +no_defs +type=crs';
 
 export function runPDALCommand(command, args, abortController, stdinData) {
@@ -98,51 +102,135 @@ function reprojectBounds(sourceProj4, minx, miny, maxx, maxy) {
   });
 }
 
+async function scrapeCRSFromXML(item) {
+  if (!item.metaUrl) {
+    return;
+  }
+  const metadataURL = `${item.metaUrl}?format=json`;
+  log.debug(`Requesting meta page from USGS: ${item.metaUrl}`);
+  const data = await fetch(metadataURL).then(res => res.json());
+  const productMetadataLink = data.webLinks.find(link => link.title === 'Product Metadata')
+  if (!productMetadataLink?.uri) {
+    log.debug('No product link found');
+    return;
+  }
+  log.debug(`Requesting product metadata page from USGS: ${productMetadataLink.uri}`);
+  const productXml = await fetch(productMetadataLink.uri).then(res => res.text());
+  const productData = xmlToObject(productXml).end({ format: 'object' });
+  const projectionName = productData?.metadata?.spref?.horizsys?.planar?.mapproj?.mapprojn ||
+    productData?.metadata?.spref?.horizsys?.planar?.gridsys?.gridsysn;
+
+  if (!projectionName) {
+    log.warn('No map projection found in product metadata');
+    return;
+  }
+  log.debug(`Found projection name in XML: ${projectionName}`);
+
+  // attempt to lookup CRS name in our local db
+  const localRecord = crsList.find(item => item.name === projectionName);
+  if (!localRecord) {
+    log.warn(`Unable to lookup CRS by projection name: ${projectionName}`);
+    return;
+  }
+  const code = `${localRecord.auth_name}:${localRecord.code}`;
+  log.debug(`Found local CRS code ${code} for projection ${projectionName}`);
+
+  // use our custom API to fetch the full CRS details
+  const csrFetchUrl = `${OGSApiEndpoint}/csr/search?${new URLSearchParams({ query: code })}`;
+  log.debug(`Searching found CRS code (${code}) for full CRS via API`);
+  const crsResponse = await fetch(csrFetchUrl).then(res => res.json());
+  if (!crsResponse.results?.length) {
+    log.warn(`Unable to lookup full CRS by code: ${code}`);
+    return;
+  }
+  const { name, id, unit } = crsResponse.results[0];
+  log.debug(`Found full CRS (${code}) via API`, { name, id, unit });
+  return {
+    source: 'meta',
+    name,
+    id,
+    unit
+  };
+}
+
+async function refreshBounds(item) {
+  if (!item?.crs?.id || !item?.bbox?.coordinates) {
+    return {};
+  }
+  const proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
+
+  // item.crs.proj4 = proj4;
+  const newBounds = reprojectBounds(proj4, ...item.bbox.coordinates);
+
+  const boundary = {
+    'type': 'Feature',
+    'geometry': {
+      'type': 'Polygon',
+      'coordinates': [newBounds]
+    }
+  };
+  return { boundary, proj4 };
+}
+
 export async function getLAZInfo(item, abortController) {
   const inputUri = item._file || item.downloadURL;
 
   // we re-run this method when we set a new CRS
   // we skip the PDAL info command if we already grabbed the metadata once and just need to reproject the box
   if (item.crs?.source === 'user') {
-    const proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
-
-    item.crs.proj4 = proj4;
-    const newBounds = reprojectBounds(proj4, ...item.bbox.coordinates);
-
-    item.bbox.boundary = {
-      'type': 'Feature',
-      'geometry': {
-        'type': 'Polygon',
-        'coordinates': [newBounds]
-      }
-    };
+    const refresh = await refreshBounds(item);
+    item.crs.proj4 = refresh.proj4;
+    item.bbox.boundary = refresh.boundary;
+    // const proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
     return item;
+    // item.crs.proj4 = proj4;
+    // const newBounds = reprojectBounds(proj4, ...item.bbox.coordinates);
+
+    // item.bbox.boundary = {
+    //   'type': 'Feature',
+    //   'geometry': {
+    //     'type': 'Polygon',
+    //     'coordinates': [newBounds]
+    //   }
+    // };
+    // return item;
   }
-  const response = await runPDALCommand('info', ['--metadata', inputUri], abortController);
-  let unit = item.unit;
+
+  let infoResponse;
   let crs = item.crs;
 
-  const projectedCRS = response?.metadata?.srs?.json?.components?.find(c => c.type === 'ProjectedCRS');
+  if (!crs) {
+    try {
+      log.debug('Using PDAL info to check the remote LAZ file headers for a CRS');
+      infoResponse = await runPDALCommand('info', ['--metadata', inputUri], abortController);
+      // let unit; // = item.unit.horizontal;
+    } catch (error) {
+      log.error(error);
+    }
+  }
+
+  const projectedCRS = infoResponse?.metadata?.srs?.json?.components?.find(c => c.type === 'ProjectedCRS');
   if (projectedCRS) {
     crs = {
+      unit: infoResponse?.metadata?.srs?.units,
       name: projectedCRS.base_crs.name,
       id: projectedCRS.base_crs.id,
       source: 'laz',
-      proj4: response.metadata.srs.proj4
+      proj4: infoResponse.metadata.srs.proj4
     };
-    unit = response?.metadata?.srs?.units;
+    // unit = response?.metadata?.srs?.units;
   }
 
-  const { minx, miny, maxx, maxy } = response.metadata;
+  const { minx, miny, maxx, maxy } = infoResponse?.metadata || {};
   let bbox = [minx, miny, maxx, maxy];
   let polygon = [];
 
-  if (response.metadata.srs.proj4) {
+  if (infoResponse?.metadata?.srs?.proj4) {
     log.debug(`Re-projecting bbox coordinates to ${CommonProjection}`, bbox);
-    polygon = reprojectBounds(response.metadata.srs.proj4, minx, miny, maxx, maxy);
+    polygon = reprojectBounds(infoResponse.metadata.srs.proj4, minx, miny, maxx, maxy);
   }
 
-  return {
+  const returnValue = {
     bbox: {
       coordinates: bbox,
       boundary: {
@@ -153,9 +241,22 @@ export async function getLAZInfo(item, abortController) {
         }
       }
     },
-    unit,
+    // unit,
     crs
   };
+
+  if (!returnValue.crs?.id) {
+    // if we failed to parse the CRS from the LAZ file, we can try falling back to
+    // scraping it from the USGS metadata
+    const scraped = await scrapeCRSFromXML(item);
+    if (scraped) {
+      returnValue.crs = scraped;
+      const { boundary, proj4 } = await refreshBounds({ ...item, crs: scraped });
+      returnValue.bbox.boundary = boundary;
+      returnValue.crs.proj4 = proj4;
+    }
+  }
+  return returnValue;
 }
 
 export class RasterizeLAZTask extends BaseTask {
@@ -232,6 +333,20 @@ export class MergeLAZTask extends BaseTask {
     // crop area
     const cropWKT = `POLYGON ((${this.coordinates.map(coord => coord.join(' ')).join(', ')}))`;
 
+    // grab the input CRS from the first item in the list
+    // we can still handle mixed projections in the data sources
+    // but we'll re-project everything to the first in the list, for consistency
+    const [first] = data._outputFiles.downloads;
+    data._inputSRS = `${first.crs.id.authority}:${first.crs.id.code}`;
+    let containsMixedProjections = false;
+    data._outputFiles.downloads.forEach(item => {
+      if (data._inputSRS !== `${first.crs.id.authority}:${first.crs.id.code}`) {
+        containsMixedProjections = true;
+      }
+    });
+    if (containsMixedProjections) {
+      log.debug(`Data set contains mixed projections! Re-projecting everything to ${data._inputSRS}`);
+    }
     const pipeline = {
       pipeline: [
         ...data._outputFiles.downloads.map(item => {
@@ -272,9 +387,16 @@ export class MergeLAZTask extends BaseTask {
         },
         {
           type: 'filters.crop',
+          // input SRS is our mapbox map's projection (EPSG:4326/WGS84)
           a_srs: 'EPSG:4326',
           polygon: cropWKT
         },
+        // re-project to the projection of the first file
+        ...containsMixedProjections ? [{
+          type: 'filters.reprojection',
+          // omit the in_srs and let PDAL auto-detect the one we set in the reader above
+          out_srs: data._inputSRS,
+        }] : [],
         // merge into single las file
         {
           type: 'writers.las',

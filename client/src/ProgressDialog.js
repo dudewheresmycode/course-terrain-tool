@@ -21,6 +21,28 @@ const StyledProgressContent = styled(DialogContent)(({ theme }) => ({
   justifyContent: 'center'
 }));
 
+export function ProgressDialogActions(props) {
+  if (props.isFinished) {
+    return (
+      <>
+        <Button variant="outlined" color="secondary" onClick={props.onClose}>Done</Button>
+        <Button variant="outlined" color="primary" onClick={props.onReveal}>Reveal in {window.courseterrain?.isMac ? 'Finder' : 'File Explorer'}</Button>
+      </>
+    )
+  } else if (props.isError) {
+    return (<Button variant="outlined" color="secondary" onClick={props.onClose}>Done</Button>)
+  } else if (props.isRunning) {
+    return (<Button variant="outlined" color="secondary" onClick={props.onCancel}>Cancel Job</Button>)
+  }
+  // default state
+  return (
+    <>
+      <Button variant="outlined" color="secondary" onClick={props.onClose}>Cancel</Button>
+      <Button variant="outlined" color="primary" disabled={!props.outputFolder} onClick={props.onSubmit}>Export Files</Button>
+    </>
+  )
+}
+
 export function ProgressDialogContent(props) {
   const job = props.jobState || {};
 
@@ -30,8 +52,20 @@ export function ProgressDialogContent(props) {
         <StyledProgressContent>
           <CheckCircleIcon color="success" sx={{ fontSize: 60, mb: 2 }} />
           <Typography sx={{ mb: 2 }} variant="h5">Job Complete!</Typography>
-          <Typography variant="body2">Check the output folder to see the generated files.</Typography>
+          <Typography variant="body2">
+            {props.jobWarnings?.length ? 'The job finished with warnings' : 'Check the output folder to see the generated files.'}
+          </Typography>
         </StyledProgressContent>
+        {props.jobWarnings?.length ? (
+          <Box sx={{ px: 3 }}>
+            {
+              props.jobWarnings.map((warning, index) => (
+                <Alert sx={{ mt: 1 }} key={index} severity="warning">{warning}</Alert>
+              ))
+            }
+          </Box>
+        )
+          : null}
         {/* <DialogActions>
           <Button variant="contained" color="primary" onClick={props.onDismiss}>Done</Button>
         </DialogActions> */}
@@ -59,9 +93,9 @@ export function ProgressDialogContent(props) {
           <Typography sx={{ mb: 2 }} variant="h5">Something went wrong!</Typography>
           <Alert sx={{ width: '100%' }} severity="error">Details: <strong>{props.jobError}</strong></Alert>
         </StyledProgressContent>
-        <DialogActions>
+        {/* <DialogActions>
           <Button variant="contained" color="primary" onClick={props.onDismiss}>Done</Button>
-        </DialogActions>
+        </DialogActions> */}
       </>
     )
   }
