@@ -180,7 +180,7 @@ export class Job extends EventEmitter {
     ].filter(Boolean);
 
     let pipelineError;
-    let pipelineWarnings;
+    const pipelineWarnings = [];
     // let previousTaskOutput;
     for (const task of taskPipeline) {
       this.activeTask = task;
@@ -201,13 +201,13 @@ export class Job extends EventEmitter {
           break;
         }
       } catch (error) {
-        log.error(`[${task.id}] Task error!`, error);
-        if (task.exitOnError === false) {
-          pipelineWarnings.push(error.message);
+        if (task.warnOnError === true) {
+          log.error(`[${task.id}] Task warning!`, error.message);
+          pipelineWarnings.push(`${error.message}`);
           continue;
-        } else {
-          pipelineError = error;
         }
+        log.error(`[${task.id}] Task error!`, error.message);
+        pipelineError = error;
         this.emit('error', { ...this.data, error: pipelineError });
         return;
       }

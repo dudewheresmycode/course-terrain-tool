@@ -117,7 +117,9 @@ async function scrapeCRSFromXML(item) {
   log.debug(`Requesting product metadata page from USGS: ${productMetadataLink.uri}`);
   const productXml = await fetch(productMetadataLink.uri).then(res => res.text());
   const productData = xmlToObject(productXml).end({ format: 'object' });
-  const projectionName = productData?.metadata?.spref?.horizsys?.planar?.mapproj?.mapprojn;
+  const projectionName = productData?.metadata?.spref?.horizsys?.planar?.mapproj?.mapprojn ||
+    productData?.metadata?.spref?.horizsys?.planar?.gridsys?.gridsysn;
+
   if (!projectionName) {
     log.warn('No map projection found in product metadata');
     return;

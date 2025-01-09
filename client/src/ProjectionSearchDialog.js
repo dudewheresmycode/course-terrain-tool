@@ -51,7 +51,7 @@ export default function ProjectionSearchDialog(props) {
 
   const debouncedChangedHandler = useCallback(event => {
     window.clearTimeout(timer);
-    timer = window.setTimeout(handleChanged, 1000, event);
+    timer = window.setTimeout(handleChanged, 600, event);
     // debounce(handleChanged, 1000, ...args);
   }, []);
 
@@ -62,8 +62,7 @@ export default function ProjectionSearchDialog(props) {
       setLoading(true);
       const res = await fetch(`${OGSApiEndpoint}/csr/search?${new URLSearchParams({ query })}`).then(res => res.json());
       // const list = await window.courseterrain.searchCRSList(query);
-      console.log(res);
-      setOptions(res.results);
+      setOptions(res?.results || []);
       setLoading(false);
     }
 
@@ -124,6 +123,7 @@ export default function ProjectionSearchDialog(props) {
                 {...params}
                 fullWidth={true}
                 label="CRS"
+                autoFocus={true}
                 placeholder="EPSG:6344"
                 slotProps={{
                   input: {

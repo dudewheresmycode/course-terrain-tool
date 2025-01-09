@@ -21,7 +21,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 
 import RangeInput from './RangeInput';
 import { Button, Checkbox, DialogActions, FormControlLabel, Grid2 } from '@mui/material';
-import { ProgressDialogContent } from './ProgressDialog';
+import { ProgressDialogActions, ProgressDialogContent } from './ProgressDialog';
 
 
 function ResolutionMath(props) {
@@ -355,7 +355,16 @@ export default function JobDialog(props) {
         </DialogContent>
       )}
       <DialogActions>
-        {props.isFinished ? (
+        <ProgressDialogActions
+          isFinished={props.isFinished}
+          isRunning={isRunning}
+          outputFolder={outputFolder}
+          onSubmit={handleJobSubmit}
+          onClose={handleClose}
+          onCancel={handleCancelJob}
+          onReveal={handleRevealClick}
+        />
+        {/* {props.isFinished ? (
           <>
             <Button variant="outlined" color="secondary" onClick={handleClose}>Done</Button>
             <Button variant="outlined" color="primary" onClick={handleRevealClick}>Reveal in {window.courseterrain?.isMac ? 'Finder' : 'File Explorer'}</Button>
@@ -369,7 +378,7 @@ export default function JobDialog(props) {
               <Button variant="outlined" color="primary" disabled={!outputFolder} onClick={handleJobSubmit}>Export Files</Button>
             </>
           )
-        )}
+        )} */}
       </DialogActions>
     </Dialog>
   )

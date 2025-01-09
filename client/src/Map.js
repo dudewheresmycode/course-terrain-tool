@@ -17,9 +17,8 @@ const MapElement = styled(Box)({
   }
 });
 
-// const MAP_START_POINT = [-95.231830, 39.176370]; // random center of US
-const MAP_START_POINT = [-79.39861795243577, 35.16273552708071]; // random center of US
-const MAP_START_ZOOM = 14;
+const MAP_START_POINT = [-95.231830, 39.176370]; // random center of US
+const MAP_START_ZOOM = 4;
 
 const INNER_ID = 'inner_bounds';
 const INNER_ID_FILL = 'inner_bounds_f';

@@ -191,10 +191,15 @@ export class GenerateSatelliteImageryTask extends BaseTask {
     super();
     this.id = 'satellite';
     this.prefix = prefix;
-    this.label = `Initializing ${this.prefix} satellite imagery task`;
+
     this.outputDirectory = outputDirectory;
     this.coordinates = coordinates;
     this.tasksEnabled = tasksEnabled;
+    this.activeSources = SatelliteSources.filter(source => this.tasksEnabled[source]);
+    this.label = `Downloading ${this.prefix} satellite imagery`;
+    // sometimes sat jobs fail due to network errors,
+    // we don't want to bail on the whole pipeline in those cases, just warn the user that we failed
+    this.warnOnError = true;
   }
 
   async process(data) {
@@ -203,10 +208,11 @@ export class GenerateSatelliteImageryTask extends BaseTask {
     }
 
 
-    const activeSources = SatelliteSources.filter(source => this.tasksEnabled[source]);
+    // const activeSources = SatelliteSources.filter(source => this.tasksEnabled[source]);
 
-    for (const source of activeSources) {
-      this.label = `Grabbing ${this.prefix} satellite imagery from ${source}`;
+    for (const [index, source] of this.activeSources.entries()) {
+      // const percent = (index / activeSources.length) * 100;
+      this.emit('progress', `Downloading ${this.prefix} satellite imagery from ${source}`);
 
       const destFile = path.join(this.outputDirectory, `${this.prefix}_sat_${source}.jpg`);
       const wmsSource = path.join(WmsDirectory, `${source}.xml`);
@@ -216,32 +222,39 @@ export class GenerateSatelliteImageryTask extends BaseTask {
       }
       const [xMin, yMin] = this.coordinates[0];
       const [xMax, yMax] = this.coordinates[2];
+      try {
 
-      await runGDALCommand(GDAL_BINARIES.gdal_translate, [
-        '-projwin', ...[xMin, yMin, xMax, yMax],
-        '-projwin_srs', 'EPSG:4326',
+        await runGDALCommand(GDAL_BINARIES.gdal_translate, [
+          '-projwin', ...[xMin, yMin, xMax, yMax],
+          '-projwin_srs', 'EPSG:4326',
 
-        // jpeg settings
-        '-of', 'JPEG',
-        '-r', 'cubic',
-        '-co', 'QUALITY=95',
+          // jpeg settings
+          '-of', 'JPEG',
+          '-r', 'cubic',
+          '-co', 'QUALITY=95',
 
-        // override output projection to match our input lidar data
-        '-a_srs', data._inputSRS,
-        // Question: Do we want the higher quality GeoTiff output?
-        // '-of', 'GTiff',
-        '-outsize', '8192', '8192',
-        wmsSource,
-        destFile
-      ], {
-        signal: this.abortController.signal,
-        env: {
-          GDAL_DEFAULT_WMS_CACHE_PATH: app.getPath('temp'),
-          GDAL_HTTP_MAX_RETRY: 3,
-          GDAL_HTTP_RETRY_DELAY: 2,
-          GDAL_HTTP_SSL_VERIFYSTATUS: 'NO'
-        }
-      });
+          // override output projection to match our input lidar data
+          '-a_srs', data._inputSRS,
+          // Question: Do we want the higher quality GeoTiff output?
+          // '-of', 'GTiff',
+          '-outsize', '8192', '8192',
+          wmsSource,
+          destFile
+        ], {
+          signal: this.abortController.signal,
+          env: {
+            // GDAL_ENABLE_WMS_CACHE: 'WMS',
+            // GDAL_HTTP_RETRY_CODES: 'ALL',
+            GDAL_DEFAULT_WMS_CACHE_PATH: app.getPath('temp'),
+            // GDAL_HTTP_MAX_RETRY: 4,
+            // GDAL_HTTP_RETRY_DELAY: 3,
+            // GDAL_HTTP_SSL_VERIFYSTATUS: 'NO'
+          }
+        });
+      } catch (error) {
+        log.error(error);
+        throw new Error(`Failed downloading satellite images for ${this.prefix}:${source}`);
+      }
 
       data._outputFiles[this.prefix].satellite[source] = destFile;
     }
