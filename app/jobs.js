@@ -202,11 +202,11 @@ export class Job extends EventEmitter {
         }
       } catch (error) {
         if (task.warnOnError === true) {
-          log.error(`[${task.id}] Task warning!`, error.message);
+          log.error(`[${task.id}] Task warning!`, error);
           pipelineWarnings.push(`${error.message}`);
           continue;
         }
-        log.error(`[${task.id}] Task error!`, error.message);
+        log.error(`[${task.id}] Task error!`, error);
         pipelineError = error;
         this.emit('error', { ...this.data, error: pipelineError });
         return;
