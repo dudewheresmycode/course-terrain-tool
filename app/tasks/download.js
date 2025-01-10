@@ -14,12 +14,17 @@ async function fetchFileSize(source) {
   }
   // since we stream to the local file, axios enables chunked transfer encoding removing the content-length from the header
   // so we do a quick head object to get total filesize first
-  const res = await fetch(source.downloadURL, { method: 'HEAD' });
-  const contentLength = res.headers.get('content-length');
-  if (contentLength) {
-    return { ...source, _size: parseInt(contentLength, 10) };
+  try {
+    const res = await fetch(source.downloadURL, { method: 'HEAD' });
+    const contentLength = res.headers.get('content-length');
+    if (contentLength) {
+      return { ...source, _size: parseInt(contentLength, 10) };
+    }
+  } catch (error) {
+    log.error(error);
+    log.error('Unable to get filesize.. proceeding without progress information');
   }
-  return source;
+  return { ...source, _size: -1 };
 }
 
 export class DownloadTask extends BaseTask {
@@ -67,7 +72,8 @@ export class DownloadTask extends BaseTask {
     return new Promise((resolve, reject) => {
       outputStream.on('error', err => {
         error = err;
-        reject(err);
+        log.error(err);
+        reject('Unable to download file');
         outputStream.close();
       });
       outputStream.on('close', () => {
@@ -85,7 +91,7 @@ export class DownloadTask extends BaseTask {
   async process(data) {
     // we perform a HEAD object on all items to get a total file size
     const sourcesWithSize = await pMap(data.dataSource.items, fetchFileSize, { concurrency: 4, signal: this.abortController.signal });
-    this.totalBytesToDownload = sourcesWithSize.reduce((prev, source) => prev + source._size, 0);
+    this.totalBytesToDownload = sourcesWithSize.reduce((prev, source) => source._size > -1 ? prev + source._size : 0, 0);
     this.totalBytesDownloaded = 0;
 
     data._outputFiles.downloads = await pMap(sourcesWithSize, source => this.downloadSource.call(this, source, data.dataSource.items.length), { concurrency: 3, signal: this.abortController.signal });

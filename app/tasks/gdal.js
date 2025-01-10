@@ -195,7 +195,7 @@ export class GenerateSatelliteImageryTask extends BaseTask {
     this.outputDirectory = outputDirectory;
     this.coordinates = coordinates;
     this.tasksEnabled = tasksEnabled;
-    this.activeSources = SatelliteSources.filter(source => this.tasksEnabled[source]);
+    this.activeSources = SatelliteSources.filter(source => this.tasksEnabled.overlays[source]);
     this.label = `Downloading ${this.prefix} satellite imagery`;
     // sometimes sat jobs fail due to network errors,
     // we don't want to bail on the whole pipeline in those cases, just warn the user that we failed
@@ -282,5 +282,42 @@ export class GenerateHillShadeImageTask extends BaseTask {
       destFile
     ], { signal: this.abortController.signal });
     data._outputFiles.hillshade = destFile;
+  }
+}
+
+export class GenerateShapefilesTask extends BaseTask {
+  constructor({ prefix, outputDirectory, coordinates, tasksEnabled }) {
+    super();
+    this.prefix = prefix;
+    this.outputDirectory = outputDirectory;
+    this.coordinates = coordinates;
+    this.tasksEnabled = tasksEnabled;
+  }
+  async process(data) {
+    if (!this.tasksEnabled.shapefiles[this.prefix]) {
+      log.info(`Skipping shapefile task for ${this.prefix}`);
+      return;
+    }
+
+    const outputFile = path.join(this.outputDirectory, `${this.prefix}.shp`);
+    const geoJSONFile = path.join(this.outputDirectory, `${this.prefix}.geojson`);
+
+    const geoJSON = {
+      type: 'Feature',
+      id: this.prefix,
+      properties: {},
+      geometry: {
+        type: 'Polygon',
+        coordinates: [this.coordinates]
+      }
+    };
+    await fs.promises.writeFile(geoJSONFile, JSON.stringify(geoJSON));
+
+    await runGDALCommand(GDAL_BINARIES.ogr2ogr, [
+      '-f', 'ESRI Shapefile', outputFile, geoJSONFile
+    ]);
+
+    data._outputFiles[this.prefix].shapefile = outputFile;
+    data._outputFiles[this.prefix].geojson = geoJSONFile;
   }
 }

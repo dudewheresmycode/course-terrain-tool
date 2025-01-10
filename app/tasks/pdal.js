@@ -358,33 +358,6 @@ export class MergeLAZTask extends BaseTask {
             ...item.crs.source !== 'laz' ? { override_srs: inputSRS } : {}
           }
         }),
-        // TODO: move the filtering to a separate step
-        // this way we use the cropped/merged LAS file to generate vegetation masks
-        // and heat-maps using data we're currently filtering out
-
-        // QUESTION: do we want to apply the SMRF filter to all files? or just ones with no classification data?
-        // https://pdal.io/en/2.4.3/workshop/exercises/analysis/ground/ground.html
-        {
-          type: 'filters.smrf',
-          where: '(Classification == 0)'
-        },
-        {
-          type: 'filters.range',
-          // Classification 2 = Ground
-          // Classification 9 = Water
-          // Classification 6 = Building
-          // Classification 10 = Rail
-          // Classification 11 = Road
-          // Source: https://desktop.arcgis.com/en/arcmap/latest/manage-data/las-dataset/lidar-point-classification.htm
-          limits: [
-            // 'Classification[1:1]', // Unclassified
-            'Classification[1.1:2.1]', // Ground
-            'Classification[8.1:9.1]', // Water
-            'Classification[10.1:11.1]', // Road
-            'Classification[16.1:17.1]' // Bridges
-          ].join(',') //Z[1.1:2.1],
-          // where: '(Classification != 0)'
-        },
         {
           type: 'filters.crop',
           // input SRS is our mapbox map's projection (EPSG:4326/WGS84)
@@ -413,4 +386,52 @@ export class MergeLAZTask extends BaseTask {
     // return lazOutputFile;
   }
 
+}
+
+export class RefineLAZTask extends BaseTask {
+  constructor({ coordinates, outputDirectory }) {
+    super();
+  }
+
+  async process(data) {
+
+    const pipeline = {
+      pipeline: [
+        {
+          type: 'readers.las',
+          file: data._outputFiles.las,
+          default_srs: data._inputSRS
+        },
+        // TODO: move the filtering to a separate step
+        // this way we use the cropped/merged LAS file to generate vegetation masks
+        // and heat-maps using data we're currently filtering out
+
+        // QUESTION: do we want to apply the SMRF filter to all files? or just ones with no classification data?
+        // https://pdal.io/en/2.4.3/workshop/exercises/analysis/ground/ground.html
+        {
+          type: 'filters.smrf',
+          where: '(Classification == 0)'
+        },
+        {
+          type: 'filters.range',
+          // Classification 2 = Ground
+          // Classification 9 = Water
+          // Classification 6 = Building
+          // Classification 10 = Rail
+          // Classification 11 = Road
+          // Source: https://desktop.arcgis.com/en/arcmap/latest/manage-data/las-dataset/lidar-point-classification.htm
+          limits: [
+            // 'Classification[1:1]', // Unclassified
+            'Classification[1.1:2.1]', // Ground
+            'Classification[8.1:9.1]', // Water
+            'Classification[10.1:11.1]', // Road
+            'Classification[16.1:17.1]' // Bridges
+          ].join(',') //Z[1.1:2.1],
+          // where: '(Classification != 0)'
+        },
+      ]
+    };
+    await runPDALCommand('pipeline', [], this.abortController, pipeline);
+
+  }
 }

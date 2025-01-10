@@ -13,7 +13,8 @@ import {
   GeoTiffStatsTask,
   GeoTiffToRaw,
   GenerateSatelliteImageryTask,
-  GenerateHillShadeImageTask
+  GenerateHillShadeImageTask,
+  GenerateShapefilesTask
 } from './tasks/gdal.js';
 
 const JobStates = {
@@ -71,6 +72,7 @@ export class Job extends EventEmitter {
     const rawDataDirectory = path.join(this.courseDirectory, 'RAW');
     const tiffDirectory = path.join(this.courseDirectory, 'TIFF');
     const overlaysDirectory = path.join(this.courseDirectory, 'Overlays');
+    const shapefilesDirectory = path.join(this.courseDirectory, 'Shapefiles');
 
 
     // const isLAZInput = this.data.dataSource?.format === 'LAZ';
@@ -130,7 +132,7 @@ export class Job extends EventEmitter {
         directory: overlaysDirectory
       }),
 
-      ...(this.data.tasksEnabled.google || this.data.tasksEnabled.bing) ? [
+      ...(this.data.tasksEnabled.overlays.google || this.data.tasksEnabled.overlays.bing) ? [
         new GenerateSatelliteImageryTask({
           prefix: 'inner',
           outputDirectory: overlaysDirectory,
@@ -138,6 +140,18 @@ export class Job extends EventEmitter {
           tasksEnabled: this.data.tasksEnabled
         }),
       ] : [],
+
+
+      new CreateDirectoryTask({
+        directory: shapefilesDirectory
+      }),
+
+      new GenerateShapefilesTask({
+        prefix: 'inner',
+        outputDirectory: shapefilesDirectory,
+        coordinates: this.data.coordinates.inner,
+        tasksEnabled: this.data.tasksEnabled
+      }),
 
       ...isOuterEnabled ? [
         new RasterizeLAZTask({
@@ -164,6 +178,14 @@ export class Job extends EventEmitter {
             tasksEnabled: this.data.tasksEnabled
           }),
         ] : [],
+
+        new GenerateShapefilesTask({
+          prefix: 'outer',
+          outputDirectory: shapefilesDirectory,
+          coordinates: this.data.coordinates.outer,
+          tasksEnabled: this.data.tasksEnabled
+        }),
+
       ] : [],
 
 
@@ -207,8 +229,8 @@ export class Job extends EventEmitter {
           continue;
         }
         log.error(`[${task.id}] Task error!`, error);
-        pipelineError = error;
-        this.emit('error', { ...this.data, error: pipelineError });
+        pipelineError = error?.message || `An unknown error occurred during the ${task.id} task`;
+        this.emit('error', pipelineError);
         return;
       }
     }

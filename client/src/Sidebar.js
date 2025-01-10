@@ -263,6 +263,7 @@ export default function Sidebar(props) {
     setIsJobFinished(true);
   }
   const handleJobError = (_, error) => {
+    console.log('JOB ERROR', error);
     setJobError(error);
   }
 

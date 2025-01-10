@@ -16,6 +16,7 @@ export const GDAL_BINARIES = {
   gdaldem: 'gdaldem',
   gdalsrsinfo: 'gdalsrsinfo',
   projinfo: 'projinfo',
+  ogr2ogr: 'ogr2ogr',
 };
 
 export const OGSApiEndpoint = process.env.OGS_API_URL || 'https://api.opengolfsim.com';
