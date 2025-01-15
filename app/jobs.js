@@ -100,7 +100,6 @@ export class Job extends EventEmitter {
         outer: getBoundsForDistance(nativeCenter, this.data.outerDistance, this.data._inputCRS.unit),
       } : {}
     };
-    console.log('this.data._bounds', this.data._bounds);
 
     const taskPipeline = [
       new CreateDirectoryTask({

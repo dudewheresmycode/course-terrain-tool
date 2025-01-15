@@ -79,7 +79,6 @@ export class CreateCSVTask extends BaseTask {
   }
 
   async process(data) {
-    console.log('generate stats', data);
     const txtPath = path.join(this.outputDirectory, 'MinMax.txt');
     const csvPath = path.join(this.outputDirectory, 'MinMax.csv');
     const innerStats = data._stats.inner;
