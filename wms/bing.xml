@@ -1,7 +1,7 @@
 <GDAL_WMS>
   <Service name="VirtualEarth">
-    <ServerUrl>http://a${server_num}.ortho.tiles.virtualearth.net/tiles/a${quadkey}.jpeg?g=90</ServerUrl>
-    <!-- <ServerUrl>http://ecn.t3.tiles.virtualearth.net/tiles/a${quadkey}.jpeg?g=1</ServerUrl> -->
+    <!-- <ServerUrl>http://a${server_num}.ortho.tiles.virtualearth.net/tiles/a${quadkey}.jpeg?g=90</ServerUrl> -->
+    <ServerUrl>https://ecn.t3.tiles.virtualearth.net/tiles/a${quadkey}.jpeg?g=1</ServerUrl>
   </Service>
   <MaxConnections>3</MaxConnections>
   <Cache/>

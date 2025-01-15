@@ -10,11 +10,17 @@ function nearest(val) {
   return Math.round(val * 1000) / 1000;
 }
 
-function feet(meters) {
+/**
+ * Converts meters to feet
+ */
+export function feet(meters) {
   return FEET_PER_METER * meters;
 }
 
-function meters(feet) {
+/**
+ * Converts feet to meters
+ */
+export function meters(feet) {
   return feet / FEET_PER_METER;
 }
 
@@ -73,6 +79,7 @@ export class CreateCSVTask extends BaseTask {
   }
 
   async process(data) {
+    console.log('generate stats', data);
     const txtPath = path.join(this.outputDirectory, 'MinMax.txt');
     const csvPath = path.join(this.outputDirectory, 'MinMax.csv');
     const innerStats = data._stats.inner;
@@ -88,8 +95,10 @@ export class CreateCSVTask extends BaseTask {
     };
     innerValues.height = innerValues.max - innerValues.min;
 
+
     // convert all data to meters
-    if (innerStats.unit === 'feet') {
+    // if (innerStats.unit === 'feet') {
+    if (data._inputCRS.unit === 'feet') {
       Object.keys(innerValues).forEach(key => {
         innerValues[key] = meters(innerValues[key]);
       });

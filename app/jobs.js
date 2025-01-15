@@ -6,7 +6,7 @@ import log from 'electron-log';
 
 import { CreateDirectoryTask } from './tasks/directory.js';
 import { DownloadTask } from './tasks/download.js';
-import { RasterizeLAZTask, MergeLAZTask } from './tasks/pdal.js';
+import { RasterizeLAZTask, MergeLAZTask, OptimizeLAZTask } from './tasks/pdal.js';
 import { CreateCSVTask } from './tasks/stats.js';
 import {
   GeoTiffFillNoDataTask,
@@ -16,6 +16,7 @@ import {
   GenerateHillShadeImageTask,
   GenerateShapefilesTask
 } from './tasks/gdal.js';
+import { addKilometers, getBoundsForDistance, reprojectBounds, WGS84 } from './utils/geo.js';
 
 const JobStates = {
   Queued: 'queued',
@@ -81,6 +82,26 @@ export class Job extends EventEmitter {
 
     const cropCoordinates = isOuterEnabled ? this.data.coordinates.outer : this.data.coordinates.inner;
 
+
+
+    const [first] = this.data.dataSource.items;
+    this.data._inputCRS = first.crs;
+    const code = `${first.crs.id.authority}:${first.crs.id.code}`;
+    this.data._inputSRS = code;
+    this.data._containsMixedProjections = this.data.dataSource.items.some(item => this.data._inputSRS !== code);
+
+
+    const [nativeCenter] = reprojectBounds(WGS84, this.data._inputCRS.proj4, this.data.coordinates.center);
+
+    this.data._bounds = {
+      center: nativeCenter,
+      inner: getBoundsForDistance(nativeCenter, this.data.distance, this.data._inputCRS.unit),
+      ...this.data.outerDistance ? {
+        outer: getBoundsForDistance(nativeCenter, this.data.outerDistance, this.data._inputCRS.unit),
+      } : {}
+    };
+    console.log('this.data._bounds', this.data._bounds);
+
     const taskPipeline = [
       new CreateDirectoryTask({
         directory: this.courseDirectory
@@ -105,16 +126,22 @@ export class Job extends EventEmitter {
         outputDirectory: lazDataDirectory
       }),
 
+      new OptimizeLAZTask({
+        outputDirectory: lazDataDirectory
+      }),
+
       new RasterizeLAZTask({
         prefix: 'inner',
         resolution: this.data.resolution.inner,
         outputDirectory: tiffDirectory,
-        coordinates: this.data.coordinates.inner
+        coordinates: this.data._bounds.inner,
+        distance: this.data.distance
       }),
 
       new GeoTiffFillNoDataTask({
         prefix: 'inner',
         resolution: this.data.resolution.inner,
+        coordinates: this.data._bounds.inner,
         outputDirectory: tiffDirectory
       }),
 
@@ -136,7 +163,8 @@ export class Job extends EventEmitter {
         new GenerateSatelliteImageryTask({
           prefix: 'inner',
           outputDirectory: overlaysDirectory,
-          coordinates: this.data.coordinates.inner,
+          // coordinates: this.data.coordinates.inner,
+          coordinates: this.data._bounds.inner,
           tasksEnabled: this.data.tasksEnabled
         }),
       ] : [],
@@ -149,7 +177,8 @@ export class Job extends EventEmitter {
       new GenerateShapefilesTask({
         prefix: 'inner',
         outputDirectory: shapefilesDirectory,
-        coordinates: this.data.coordinates.inner,
+        // coordinates: this.data.coordinates.inner,
+        coordinates: this.data._bounds.inner,
         tasksEnabled: this.data.tasksEnabled
       }),
 
@@ -158,11 +187,12 @@ export class Job extends EventEmitter {
           prefix: 'outer',
           resolution: this.data.resolution.outer,
           outputDirectory: tiffDirectory,
-          coordinates: this.data.coordinates.outer
+          coordinates: this.data._bounds.outer
         }),
         new GeoTiffFillNoDataTask({
           prefix: 'outer',
           resolution: this.data.resolution.outer,
+          coordinates: this.data._bounds.outer,
           outputDirectory: tiffDirectory
         }),
         new GeoTiffStatsTask({ prefix: 'outer' }),
@@ -174,7 +204,8 @@ export class Job extends EventEmitter {
           new GenerateSatelliteImageryTask({
             prefix: 'outer',
             outputDirectory: overlaysDirectory,
-            coordinates: this.data.coordinates.outer,
+            // coordinates: this.data.coordinates.outer,
+            coordinates: this.data._bounds.outer,
             tasksEnabled: this.data.tasksEnabled
           }),
         ] : [],
@@ -182,7 +213,8 @@ export class Job extends EventEmitter {
         new GenerateShapefilesTask({
           prefix: 'outer',
           outputDirectory: shapefilesDirectory,
-          coordinates: this.data.coordinates.outer,
+          // coordinates: this.data.coordinates.outer,
+          coordinates: this.data._bounds.outer,
           tasksEnabled: this.data.tasksEnabled
         }),
 

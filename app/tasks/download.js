@@ -12,8 +12,6 @@ async function fetchFileSize(source) {
   if (source._file && fs.existsSync(source._file)) {
     return source;
   }
-  // since we stream to the local file, axios enables chunked transfer encoding removing the content-length from the header
-  // so we do a quick head object to get total filesize first
   try {
     const res = await fetch(source.downloadURL, { method: 'HEAD' });
     const contentLength = res.headers.get('content-length');
@@ -22,9 +20,8 @@ async function fetchFileSize(source) {
     }
   } catch (error) {
     log.error(error);
-    log.error('Unable to get filesize.. proceeding without progress information');
+    throw new Error('Unable to fetch filesize of LAS file');
   }
-  return { ...source, _size: -1 };
 }
 
 export class DownloadTask extends BaseTask {
@@ -51,6 +48,9 @@ export class DownloadTask extends BaseTask {
         _file: filePath
       };
     }
+
+    // this.emit('progress', label, percent);
+
     let lastLoaded = 0;
     const response = await axios({
       method: 'get',
@@ -89,12 +89,16 @@ export class DownloadTask extends BaseTask {
   }
 
   async process(data) {
-    // we perform a HEAD object on all items to get a total file size
-    const sourcesWithSize = await pMap(data.dataSource.items, fetchFileSize, { concurrency: 4, signal: this.abortController.signal });
-    this.totalBytesToDownload = sourcesWithSize.reduce((prev, source) => source._size > -1 ? prev + source._size : 0, 0);
-    this.totalBytesDownloaded = 0;
-
-    data._outputFiles.downloads = await pMap(sourcesWithSize, source => this.downloadSource.call(this, source, data.dataSource.items.length), { concurrency: 3, signal: this.abortController.signal });
+    try {
+      // we perform a HEAD object on all items to get a total file size
+      const sourcesWithSize = await pMap(data.dataSource.items, fetchFileSize, { concurrency: 4, signal: this.abortController.signal });
+      this.totalBytesToDownload = sourcesWithSize.reduce((prev, source) => source._size > -1 ? prev + source._size : 0, 0);
+      this.totalBytesDownloaded = 0;
+      data._outputFiles.downloads = await pMap(sourcesWithSize, source => this.downloadSource.call(this, source, data.dataSource.items.length), { concurrency: 3, signal: this.abortController.signal });
+    } catch (error) {
+      log.error(error);
+      throw error;
+    }
   }
 
 }

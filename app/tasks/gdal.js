@@ -9,6 +9,7 @@ import isDev from 'electron-is-dev';
 import { GDAL_BINARIES } from '../constants.js';
 import { tools } from '../tools/index.js';
 import BaseTask from './base.js';
+import { reprojectBounds, WGS84 } from '../utils/geo.js';
 
 const execAsync = promisify(exec);
 
@@ -117,11 +118,15 @@ export class GeoTiffStatsTask extends BaseTask {
  */
 export class GeoTiffFillNoDataTask extends BaseTask {
   constructor({
-    prefix, resolution, outputDirectory
+    coordinates,
+    prefix,
+    resolution,
+    outputDirectory
   }) {
     super();
     this.label = `Interpolating missing elevation data in ${prefix} TIFF file`;
     this.id = 'fill-nodata';
+    this.coordinates = coordinates;
     this.prefix = prefix;
     this.resolution = resolution;
     this.outputDirectory = outputDirectory;
@@ -133,17 +138,37 @@ export class GeoTiffFillNoDataTask extends BaseTask {
       throw new Error('Could not locate input tiff from previous pipeline step');
     }
     const destFile = path.join(this.outputDirectory, `${this.prefix}_terrain_${Math.round(this.resolution * 100)}cm.tif`);
+    const destFile2 = path.join(this.outputDirectory, `${this.prefix}_terrain_${Math.round(this.resolution * 100)}cm_crop.tif`);
 
     const onProgress = (percent) => {
       this.emit('progress', 'Interpolating missing data in GeoTIFF', percent);
     }
     const args = [
-      // '-md', '40',
-      // '-si', '1',
+      // TODO: base this on resolution?
+      // minimum pixel distance to look for missing data
+      // set a high-ish value to try and avoid missing data
+      '-md', '200',
+      '-si', '2',
       // '-interp', 'nearest',
       inputFile, destFile
     ];
     await runGDALCommand(GDAL_BINARIES.gdal_fillnodata, args, { signal: this.abortController.signal, onProgress });
+
+    // // crop the filled raster back to the original bounds
+    // const nativeBounds = reprojectBounds(WGS84, data._inputCRS.proj4, ...this.coordinates);
+    // const [xMin, yMin] = nativeBounds[0];
+    // const [xMax, yMax] = nativeBounds[2];
+    // const te = [xMin, yMin, xMax, yMax];
+    // const cropWKT = `POLYGON ((${nativeBounds.map(coord => coord.join(' ')).join(', ')}))`;
+
+    // console.log(`TE command: ${te}`);
+    // await runGDALCommand(GDAL_BINARIES.gdalwarp, [
+    //   '-cutline', cropWKT,
+    //   '-crop_to_cutline',
+    //   // '-ts', '8192', '8192',
+    //   '-te', ...te,
+    //   destFile, destFile2
+    // ], { signal: this.abortController.signal, onProgress });
 
     // remove the previous temporary tiff?
     // await fs.promises.unlink(data._outputFiles[this.prefix].tiff);
@@ -214,49 +239,51 @@ export class GenerateSatelliteImageryTask extends BaseTask {
       // const percent = (index / activeSources.length) * 100;
       this.emit('progress', `Downloading ${this.prefix} satellite imagery from ${source}`);
 
-      const destFile = path.join(this.outputDirectory, `${this.prefix}_sat_${source}.jpg`);
+      const destFileStandard = path.join(this.outputDirectory, `${this.prefix}_sat_${source}.tif`);
+      const destFileJPEG = path.join(this.outputDirectory, `${this.prefix}_sat_${source}.jpg`);
       const wmsSource = path.join(WmsDirectory, `${source}.xml`);
 
       if (!fs.existsSync(wmsSource)) {
         throw new Error(`Unable to generate ${source} satellite images. Missing WMS XML file.`);
       }
-      const [xMin, yMin] = this.coordinates[0];
-      const [xMax, yMax] = this.coordinates[2];
       try {
 
-        await runGDALCommand(GDAL_BINARIES.gdal_translate, [
-          '-projwin', ...[xMin, yMin, xMax, yMax],
-          '-projwin_srs', 'EPSG:4326',
+        const cropWKT = `POLYGON ((${this.coordinates.map(coord => coord.join(' ')).join(', ')}))`;
 
-          // jpeg settings
-          '-of', 'JPEG',
-          '-r', 'cubic',
-          '-co', 'QUALITY=95',
-
-          // override output projection to match our input lidar data
-          '-a_srs', data._inputSRS,
-          // Question: Do we want the higher quality GeoTiff output?
-          // '-of', 'GTiff',
-          '-outsize', '8192', '8192',
+        await runGDALCommand(GDAL_BINARIES.gdalwarp, [
+          '-t_srs', data._inputSRS,
+          '-cutline', cropWKT,
+          '-crop_to_cutline',
+          '-ts', '8192', '8192',
           wmsSource,
-          destFile
+          destFileStandard
         ], {
           signal: this.abortController.signal,
           env: {
             // GDAL_ENABLE_WMS_CACHE: 'WMS',
-            // GDAL_HTTP_RETRY_CODES: 'ALL',
+            GDAL_HTTP_RETRY_CODES: 'ALL',
             GDAL_DEFAULT_WMS_CACHE_PATH: app.getPath('temp'),
-            // GDAL_HTTP_MAX_RETRY: 4,
-            // GDAL_HTTP_RETRY_DELAY: 3,
-            // GDAL_HTTP_SSL_VERIFYSTATUS: 'NO'
+            GDAL_HTTP_MAX_RETRY: 10,
+            GDAL_HTTP_RETRY_DELAY: 2,
+            GDAL_HTTP_SSL_VERIFYSTATUS: 'NO'
           }
         });
+
+        // convert to jpeg
+        await runGDALCommand(GDAL_BINARIES.gdal_translate, [
+          '-of', 'JPEG',
+          '-r', 'cubic',
+          '-co', 'QUALITY=95',
+          '-outsize', '8192', '8192',
+          destFileStandard,
+          destFileJPEG
+        ]);
       } catch (error) {
         log.error(error);
         throw new Error(`Failed downloading satellite images for ${this.prefix}:${source}`);
       }
 
-      data._outputFiles[this.prefix].satellite[source] = destFile;
+      data._outputFiles[this.prefix].satellite[source] = destFileJPEG;
     }
 
   }
@@ -274,14 +301,26 @@ export class GenerateHillShadeImageTask extends BaseTask {
     if (!sourceFile) {
       throw new Error('Missing TIFF generated in previous pipeline step');
     }
-    const destFile = path.join(this.outputDirectory, 'hillshade.jpg');
+    const destFile = path.join(this.outputDirectory, 'hillshade_raw.tif');
+    const destFile2 = path.join(this.outputDirectory, 'hillshade_8192x8192.jpg');
+
     await runGDALCommand(GDAL_BINARIES.gdaldem, [
       'hillshade',
-      '-compute_edges',
+      // '-compute_edges',
+      // '-outsize', '8192', '8192',
       sourceFile,
       destFile
     ], { signal: this.abortController.signal });
-    data._outputFiles.hillshade = destFile;
+
+    await runGDALCommand(GDAL_BINARIES.gdal_translate, [
+      '-outsize', '8192', '8192',
+      '-r', 'cubic',
+      '-co', 'QUALITY=95',
+      destFile,
+      destFile2
+    ]);
+
+    data._outputFiles.hillshade = destFile2;
   }
 }
 
@@ -306,6 +345,12 @@ export class GenerateShapefilesTask extends BaseTask {
       type: 'Feature',
       id: this.prefix,
       properties: {},
+      crs: {
+        type: 'name',
+        properties: {
+          name: data._inputSRS
+        }
+      },
       geometry: {
         type: 'Polygon',
         coordinates: [this.coordinates]
@@ -314,6 +359,7 @@ export class GenerateShapefilesTask extends BaseTask {
     await fs.promises.writeFile(geoJSONFile, JSON.stringify(geoJSON));
 
     await runGDALCommand(GDAL_BINARIES.ogr2ogr, [
+      '-t_srs', data._inputSRS,
       '-f', 'ESRI Shapefile', outputFile, geoJSONFile
     ]);
 
