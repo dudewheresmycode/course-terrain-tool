@@ -6,15 +6,17 @@ import log from 'electron-log';
 
 import { CreateDirectoryTask } from './tasks/directory.js';
 import { DownloadTask } from './tasks/download.js';
-import { RasterizeLAZTask, MergeLAZTask } from './tasks/pdal.js';
+import { RasterizeLAZTask, MergeLAZTask, OptimizeLAZTask } from './tasks/pdal.js';
 import { CreateCSVTask } from './tasks/stats.js';
 import {
   GeoTiffFillNoDataTask,
   GeoTiffStatsTask,
   GeoTiffToRaw,
   GenerateSatelliteImageryTask,
-  GenerateHillShadeImageTask
+  GenerateHillShadeImageTask,
+  GenerateShapefilesTask
 } from './tasks/gdal.js';
+import { addKilometers, getBoundsForDistance, reprojectBounds, WGS84 } from './utils/geo.js';
 
 const JobStates = {
   Queued: 'queued',
@@ -71,6 +73,7 @@ export class Job extends EventEmitter {
     const rawDataDirectory = path.join(this.courseDirectory, 'RAW');
     const tiffDirectory = path.join(this.courseDirectory, 'TIFF');
     const overlaysDirectory = path.join(this.courseDirectory, 'Overlays');
+    const shapefilesDirectory = path.join(this.courseDirectory, 'Shapefiles');
 
 
     // const isLAZInput = this.data.dataSource?.format === 'LAZ';
@@ -78,6 +81,25 @@ export class Job extends EventEmitter {
     const isOuterEnabled = this.data.coordinates.outer?.length;
 
     const cropCoordinates = isOuterEnabled ? this.data.coordinates.outer : this.data.coordinates.inner;
+
+
+
+    const [first] = this.data.dataSource.items;
+    this.data._inputCRS = first.crs;
+    const code = `${first.crs.id.authority}:${first.crs.id.code}`;
+    this.data._inputSRS = code;
+    this.data._containsMixedProjections = this.data.dataSource.items.some(item => this.data._inputSRS !== code);
+
+
+    const [nativeCenter] = reprojectBounds(WGS84, this.data._inputCRS.proj4, this.data.coordinates.center);
+
+    this.data._bounds = {
+      center: nativeCenter,
+      inner: getBoundsForDistance(nativeCenter, this.data.distance, this.data._inputCRS.unit),
+      ...this.data.outerDistance ? {
+        outer: getBoundsForDistance(nativeCenter, this.data.outerDistance, this.data._inputCRS.unit),
+      } : {}
+    };
 
     const taskPipeline = [
       new CreateDirectoryTask({
@@ -103,16 +125,22 @@ export class Job extends EventEmitter {
         outputDirectory: lazDataDirectory
       }),
 
+      new OptimizeLAZTask({
+        outputDirectory: lazDataDirectory
+      }),
+
       new RasterizeLAZTask({
         prefix: 'inner',
         resolution: this.data.resolution.inner,
         outputDirectory: tiffDirectory,
-        coordinates: this.data.coordinates.inner
+        coordinates: this.data._bounds.inner,
+        distance: this.data.distance
       }),
 
       new GeoTiffFillNoDataTask({
         prefix: 'inner',
         resolution: this.data.resolution.inner,
+        coordinates: this.data._bounds.inner,
         outputDirectory: tiffDirectory
       }),
 
@@ -130,25 +158,40 @@ export class Job extends EventEmitter {
         directory: overlaysDirectory
       }),
 
-      ...(this.data.tasksEnabled.google || this.data.tasksEnabled.bing) ? [
+      ...(this.data.tasksEnabled.overlays.google || this.data.tasksEnabled.overlays.bing) ? [
         new GenerateSatelliteImageryTask({
           prefix: 'inner',
           outputDirectory: overlaysDirectory,
-          coordinates: this.data.coordinates.inner,
+          // coordinates: this.data.coordinates.inner,
+          coordinates: this.data._bounds.inner,
           tasksEnabled: this.data.tasksEnabled
         }),
       ] : [],
+
+
+      new CreateDirectoryTask({
+        directory: shapefilesDirectory
+      }),
+
+      new GenerateShapefilesTask({
+        prefix: 'inner',
+        outputDirectory: shapefilesDirectory,
+        // coordinates: this.data.coordinates.inner,
+        coordinates: this.data._bounds.inner,
+        tasksEnabled: this.data.tasksEnabled
+      }),
 
       ...isOuterEnabled ? [
         new RasterizeLAZTask({
           prefix: 'outer',
           resolution: this.data.resolution.outer,
           outputDirectory: tiffDirectory,
-          coordinates: this.data.coordinates.outer
+          coordinates: this.data._bounds.outer
         }),
         new GeoTiffFillNoDataTask({
           prefix: 'outer',
           resolution: this.data.resolution.outer,
+          coordinates: this.data._bounds.outer,
           outputDirectory: tiffDirectory
         }),
         new GeoTiffStatsTask({ prefix: 'outer' }),
@@ -160,10 +203,20 @@ export class Job extends EventEmitter {
           new GenerateSatelliteImageryTask({
             prefix: 'outer',
             outputDirectory: overlaysDirectory,
-            coordinates: this.data.coordinates.outer,
+            // coordinates: this.data.coordinates.outer,
+            coordinates: this.data._bounds.outer,
             tasksEnabled: this.data.tasksEnabled
           }),
         ] : [],
+
+        new GenerateShapefilesTask({
+          prefix: 'outer',
+          outputDirectory: shapefilesDirectory,
+          // coordinates: this.data.coordinates.outer,
+          coordinates: this.data._bounds.outer,
+          tasksEnabled: this.data.tasksEnabled
+        }),
+
       ] : [],
 
 
@@ -207,8 +260,8 @@ export class Job extends EventEmitter {
           continue;
         }
         log.error(`[${task.id}] Task error!`, error);
-        pipelineError = error;
-        this.emit('error', { ...this.data, error: pipelineError });
+        pipelineError = error?.message || `An unknown error occurred during the ${task.id} task`;
+        this.emit('error', pipelineError);
         return;
       }
     }

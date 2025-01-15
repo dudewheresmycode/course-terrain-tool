@@ -9,6 +9,9 @@ import { tools } from '../tools/index.js';
 import { OGSApiEndpoint } from '../constants.js';
 import { getProjInfo } from './gdal.js';
 import crsList from '../crs-list.json' with { type: 'json' };
+import { feet } from './stats.js';
+import { reprojectBounds, WGS84 } from '../utils/geo.js';
+
 
 // the projection that our map and course/crop area uses
 export const Common = '+proj=longlat +datum=WGS84 +no_defs +type=crs';
@@ -86,7 +89,7 @@ function coordinatesToPolygon(coordinates) {
   return `POLYGON ((${coordinates.map(coord => coord.join(' ')).join(', ')}))`;
 }
 
-function reprojectBounds(sourceProj4, minx, miny, maxx, maxy) {
+export function reprojectBox(sourceProj4, minx, miny, maxx, maxy) {
   return [
     [minx, maxy],
     [maxx, maxy],
@@ -160,7 +163,7 @@ async function refreshBounds(item) {
   const proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
 
   // item.crs.proj4 = proj4;
-  const newBounds = reprojectBounds(proj4, ...item.bbox.coordinates);
+  const newBounds = reprojectBox(proj4, ...item.bbox.coordinates);
 
   const boundary = {
     'type': 'Feature',
@@ -201,7 +204,7 @@ export async function getLAZInfo(item, abortController) {
 
   if (!crs) {
     try {
-      log.debug('Using PDAL info to check the remote LAZ file headers for a CRS');
+      log.debug('Using PDAL info to check the remote LAZ file headers for a CRS', inputUri);
       infoResponse = await runPDALCommand('info', ['--metadata', inputUri], abortController);
       // let unit; // = item.unit.horizontal;
     } catch (error) {
@@ -209,12 +212,15 @@ export async function getLAZInfo(item, abortController) {
     }
   }
 
-  const projectedCRS = infoResponse?.metadata?.srs?.json?.components?.find(c => c.type === 'ProjectedCRS');
+  let projectedCRS = infoResponse?.metadata?.srs?.json;
+  if (!projectedCRS?.base_crs && infoResponse?.metadata?.srs?.json?.components?.length) {
+    projectedCRS = infoResponse?.metadata?.srs?.json?.components?.find(c => c.type === 'ProjectedCRS');
+  }
   if (projectedCRS) {
     crs = {
-      unit: infoResponse?.metadata?.srs?.units,
-      name: projectedCRS.base_crs.name,
-      id: projectedCRS.base_crs.id,
+      unit: infoResponse?.metadata?.srs?.units?.horizontal,
+      name: projectedCRS.name || projectedCRS?.base_crs?.name,
+      id: projectedCRS.id || projectedCRS?.base_crs?.id,
       source: 'laz',
       proj4: infoResponse.metadata.srs.proj4
     };
@@ -227,7 +233,7 @@ export async function getLAZInfo(item, abortController) {
 
   if (infoResponse?.metadata?.srs?.proj4) {
     log.debug(`Re-projecting bbox coordinates to ${CommonProjection}`, bbox);
-    polygon = reprojectBounds(infoResponse.metadata.srs.proj4, minx, miny, maxx, maxy);
+    polygon = reprojectBox(infoResponse.metadata.srs.proj4, minx, miny, maxx, maxy);
   }
 
   const returnValue = {
@@ -264,7 +270,8 @@ export class RasterizeLAZTask extends BaseTask {
     prefix,
     resolution,
     outputDirectory,
-    coordinates
+    coordinates,
+    distance
   }) {
     super();
     this.id = 'pdal-raster';
@@ -273,6 +280,7 @@ export class RasterizeLAZTask extends BaseTask {
     this.resolution = resolution;
     this.outputDirectory = outputDirectory;
     this.coordinates = coordinates;
+    this.distance = distance; // box size in km
   }
 
   async process(data) {
@@ -280,28 +288,28 @@ export class RasterizeLAZTask extends BaseTask {
       throw new Error('Error creating raster from LAS file');
     }
     const tiffOutputFile = path.join(this.outputDirectory, `${this.prefix}_laz_${Math.round(this.resolution * 100)}_temp.tif`);
-    // crop area
+    let resolution = this.resolution;
+    // let width = Math.floor(this.distance * 1000);
+    if (data._inputCRS?.unit === 'foot') {
+      // if CRS is in feet convert the resolution to feet
+      resolution = feet(this.resolution);
+      // width = Math.floor(feet(this.distance * 1000));
+    }
+
     const pipeline = {
       pipeline: [
         // the merged las file
-        data._outputFiles.las,
-        ...this.coordinates ? [
-          {
-            type: 'filters.crop',
-            a_srs: 'EPSG:4326',
-            polygon: coordinatesToPolygon(this.coordinates),
-          }
-        ] : [],
+        data._outputFiles.las2,
+        {
+          type: 'filters.crop',
+          polygon: coordinatesToPolygon(this.coordinates)
+        },
         {
           filename: tiffOutputFile,
           gdaldriver: 'GTiff',
           // supported values are “min”, “max”, “mean”, “idw”, “count”, “stdev” and “all”.
           output_type: 'mean',
-          // output_type: 'idw',
-          // output_type: 'all',
-          // fill missing data?
-          // nodata: -9999,
-          resolution: this.resolution,
+          resolution,
           type: 'writers.gdal'
         }
       ].filter(Boolean)
@@ -330,23 +338,29 @@ export class MergeLAZTask extends BaseTask {
     }
     const lazOutputFile = path.join(this.outputDirectory, 'merged_laz_outer.las');
 
-    // crop area
-    const cropWKT = `POLYGON ((${this.coordinates.map(coord => coord.join(' ')).join(', ')}))`;
-
     // grab the input CRS from the first item in the list
     // we can still handle mixed projections in the data sources
     // but we'll re-project everything to the first in the list, for consistency
-    const [first] = data._outputFiles.downloads;
-    data._inputSRS = `${first.crs.id.authority}:${first.crs.id.code}`;
-    let containsMixedProjections = false;
-    data._outputFiles.downloads.forEach(item => {
-      if (data._inputSRS !== `${first.crs.id.authority}:${first.crs.id.code}`) {
-        containsMixedProjections = true;
-      }
-    });
-    if (containsMixedProjections) {
-      log.debug(`Data set contains mixed projections! Re-projecting everything to ${data._inputSRS}`);
-    }
+    // const [first] = data._outputFiles.downloads;
+    // data._inputCRS = first.crs;
+    // data._inputSRS = `${first.crs.id.authority}:${first.crs.id.code}`;
+    // let containsMixedProjections = false;
+    // data._outputFiles.downloads.forEach(item => {
+    //   if (data._inputSRS !== `${first.crs.id.authority}:${first.crs.id.code}`) {
+    //     containsMixedProjections = true;
+    //   }
+    // });
+    // if (containsMixedProjections) {
+    //   log.debug(`Data set contains mixed projections! Re-projecting everything to ${data._inputSRS}`);
+    // }
+
+    // crop area
+    // const cropWKT = `POLYGON ((${this.coordinates.map(coord => coord.join(' ')).join(', ')}))`;
+    // re-project crop area from wgs84 to the source CRS
+    const nativeCoordinates = reprojectBounds(WGS84, data._inputCRS.proj4, ...this.coordinates);
+    console.log('nativeCoordinates', nativeCoordinates);
+    // const cropWKT = `POLYGON ((${nativeCoordinates.map(coord => coord.join(' ')).join(', ')}))`;
+
     const pipeline = {
       pipeline: [
         ...data._outputFiles.downloads.map(item => {
@@ -355,18 +369,78 @@ export class MergeLAZTask extends BaseTask {
             type: 'readers.las',
             filename: item._file,
             // force the CRS if we didn't detect it from the laz
-            ...item.crs.source !== 'laz' ? { override_srs: inputSRS } : {}
+            ...item.crs.source !== 'laz' ? { override_srs: inputSRS } : { default_srs: inputSRS }
           }
         }),
+        // re-project to the projection of the first file
+        ...data._containsMixedProjections ? [{
+          type: 'filters.reprojection',
+          // omit the in_srs and let PDAL auto-detect the one we set in the reader above
+          out_srs: data._inputSRS,
+        }] : [],
+
+        {
+          type: 'filters.crop',
+          // input SRS is our mapbox map's projection (EPSG:4326/WGS84)
+          // a_srs: 'EPSG:4326',
+          // polygon: coordinatesToPolygon(nativeCoordinates)
+          polygon: coordinatesToPolygon(data._bounds.outer || data._bounds.inner)
+        },
+        // merge into single las file
+        {
+          type: 'writers.las',
+          // compression: true,
+          filename: lazOutputFile
+        }
+      ]
+    };
+
+    log.info('Running PDAL pipeline: ', pipeline);
+    await runPDALCommand('pipeline', [], this.abortController, pipeline);
+
+    data._outputFiles.las = lazOutputFile;
+    // return lazOutputFile;
+  }
+
+}
+
+/**
+ * Runs the SMRF and classifications filtering on the cropped LAS file
+ */
+export class OptimizeLAZTask extends BaseTask {
+  constructor({ outputDirectory }) {
+    super();
+    this.label = 'Filtering merged LAS data for ground points';
+    this.outputDirectory = outputDirectory;
+  }
+
+  async process(data) {
+    const lazOutputFile = path.join(this.outputDirectory, 'filtered_laz_outer.las');
+
+    const pipeline = {
+      pipeline: [
+        {
+          type: 'readers.las',
+          filename: data._outputFiles.las
+          // ...data._inputSRS ? { override_srs: data._inputSRS } : {}
+        },
         // TODO: move the filtering to a separate step
         // this way we use the cropped/merged LAS file to generate vegetation masks
         // and heat-maps using data we're currently filtering out
 
         // QUESTION: do we want to apply the SMRF filter to all files? or just ones with no classification data?
         // https://pdal.io/en/2.4.3/workshop/exercises/analysis/ground/ground.html
+
+        {
+          type: 'filters.outlier',
+          method: 'statistical',
+          mean_k: 8,
+          multiplier: 3.0,
+        },
         {
           type: 'filters.smrf',
-          where: '(Classification == 0)'
+          where: '(Classification == 0)',
+          ignore: 'Classification[7:7]'
         },
         {
           type: 'filters.range',
@@ -386,31 +460,14 @@ export class MergeLAZTask extends BaseTask {
           // where: '(Classification != 0)'
         },
         {
-          type: 'filters.crop',
-          // input SRS is our mapbox map's projection (EPSG:4326/WGS84)
-          a_srs: 'EPSG:4326',
-          polygon: cropWKT
-        },
-        // re-project to the projection of the first file
-        ...containsMixedProjections ? [{
-          type: 'filters.reprojection',
-          // omit the in_srs and let PDAL auto-detect the one we set in the reader above
-          out_srs: data._inputSRS,
-        }] : [],
-        // merge into single las file
-        {
           type: 'writers.las',
           // compression: true,
           filename: lazOutputFile
         }
       ]
     };
-
-    log.info('Running PDAL pipeline: ', pipeline);
     await runPDALCommand('pipeline', [], this.abortController, pipeline);
+    data._outputFiles.las2 = lazOutputFile;
 
-    data._outputFiles.las = lazOutputFile;
-    // return lazOutputFile;
   }
-
 }
