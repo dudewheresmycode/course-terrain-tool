@@ -3,6 +3,7 @@ import pMap from 'p-map';
 import path from 'path';
 import axios from 'axios';
 import log from 'electron-log';
+import https from 'node:https';
 
 import BaseTask from './base.js';
 
@@ -57,6 +58,7 @@ export class DownloadTask extends BaseTask {
       signal: this.abortController.signal,
       url: source.downloadURL,
       responseType: 'stream',
+      httpsAgent: new https.Agent({ keepAlive: true }),
       onDownloadProgress: progressEvent => {
         if (progressEvent.loaded) {
           this.totalBytesDownloaded += (progressEvent.loaded - lastLoaded);

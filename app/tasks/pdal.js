@@ -216,7 +216,7 @@ export async function getLAZInfo(item, abortController) {
   if (!projectedCRS?.base_crs && infoResponse?.metadata?.srs?.json?.components?.length) {
     projectedCRS = infoResponse?.metadata?.srs?.json?.components?.find(c => c.type === 'ProjectedCRS');
   }
-  if (projectedCRS) {
+  if (projectedCRS?.id || projectedCRS?.base_crs) {
     crs = {
       unit: infoResponse?.metadata?.srs?.units?.horizontal,
       name: projectedCRS.name || projectedCRS?.base_crs?.name,

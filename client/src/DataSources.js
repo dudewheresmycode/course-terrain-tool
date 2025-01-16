@@ -138,7 +138,7 @@ function DataListItem(props) {
           item._pending ? (
             <FauxTinyButon>Loading...</FauxTinyButon>
           ) :
-            item.crs ?
+            item.crs?.id ?
               (<FauxTinyButon component="span">
                 {
                   [
@@ -149,7 +149,7 @@ function DataListItem(props) {
               </FauxTinyButon>)
               :
               (<TinyButton onClick={handleCRSClick} startIcon={<WarningIcon />} color="error" variant="contained" size="small">
-                {item.error ? item.error || 'Error Fetching CRS' : 'Missing CRS'}
+                {item.error ? (item.error || 'Error Fetching CRS') : 'Missing CRS'}
               </TinyButton>)
 
         }
