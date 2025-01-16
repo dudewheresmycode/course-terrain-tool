@@ -21,3 +21,9 @@ export const GDAL_BINARIES = {
 };
 
 export const OGSApiEndpoint = process.env.OGS_API_URL || 'https://api.opengolfsim.com';
+
+
+export const SatelliteSources = {
+  Google: 'google',
+  Bing: 'bing'
+};

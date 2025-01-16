@@ -6,7 +6,7 @@ import { app } from 'electron';
 import log from 'electron-log';
 import isDev from 'electron-is-dev';
 
-import { GDAL_BINARIES } from '../constants.js';
+import { GDAL_BINARIES, SatelliteSources } from '../constants.js';
 import { tools } from '../tools/index.js';
 import BaseTask from './base.js';
 import { reprojectBounds, WGS84 } from '../utils/geo.js';
@@ -15,10 +15,6 @@ const execAsync = promisify(exec);
 
 const WmsDirectory = isDev ? path.resolve(process.cwd(), './wms') : path.resolve(app.getAppPath(), '../wms');
 
-const SatelliteSources = [
-  'google',
-  'bing'
-];
 
 function getGDALCommand(binaryName) {
   const gdalbin = tools.gdal.bin[binaryName];
@@ -220,7 +216,7 @@ export class GenerateSatelliteImageryTask extends BaseTask {
     this.outputDirectory = outputDirectory;
     this.coordinates = coordinates;
     this.tasksEnabled = tasksEnabled;
-    this.activeSources = SatelliteSources.filter(source => this.tasksEnabled.overlays[source]);
+    this.activeSources = Object.values(SatelliteSources).filter(source => this.tasksEnabled.overlays[source]);
     this.label = `Downloading ${this.prefix} satellite imagery`;
     // sometimes sat jobs fail due to network errors,
     // we don't want to bail on the whole pipeline in those cases, just warn the user that we failed

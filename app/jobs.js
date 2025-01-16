@@ -8,6 +8,7 @@ import { CreateDirectoryTask } from './tasks/directory.js';
 import { DownloadTask } from './tasks/download.js';
 import { RasterizeLAZTask, MergeLAZTask, OptimizeLAZTask } from './tasks/pdal.js';
 import { CreateCSVTask } from './tasks/stats.js';
+import { CreateSVGTask } from './tasks/svg.js';
 import {
   GeoTiffFillNoDataTask,
   GeoTiffStatsTask,
@@ -227,6 +228,10 @@ export class Job extends EventEmitter {
       ] : [],
 
       new CreateCSVTask({
+        outputDirectory: this.courseDirectory
+      }),
+
+      new CreateSVGTask({
         outputDirectory: this.courseDirectory
       })
 
