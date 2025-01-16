@@ -97,7 +97,7 @@ export class Job extends EventEmitter {
       center: nativeCenter,
       inner: getBoundsForDistance(nativeCenter, this.data.distance, this.data._inputCRS.unit),
       ...this.data.outerDistance ? {
-        outer: getBoundsForDistance(nativeCenter, this.data.outerDistance, this.data._inputCRS.unit),
+        outer: getBoundsForDistance(nativeCenter, this.data.distance + this.data.outerDistance, this.data._inputCRS.unit),
       } : {}
     };
 
