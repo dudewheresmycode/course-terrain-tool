@@ -1,4 +1,4 @@
-import { app, Menu, ipcMain, shell } from 'electron';
+import { app, dialog, Menu, ipcMain, shell } from 'electron';
 import pkg from '../package.json' with { type: 'json' };
 
 const isMac = process.platform === 'darwin'
@@ -96,6 +96,16 @@ export function buildMenu(webContents) {
               }
             }
           }),
+        },
+        {
+          label: 'Enter Center Coordinates',
+          click: async () => {
+            const response = await dialog.showMessageBox({
+              type: 'question'
+            });
+            console.log('response', response);
+            // -83.78796951361652,42.194911822734696
+          }
         },
         { type: 'separator' },
         { role: 'reload' },

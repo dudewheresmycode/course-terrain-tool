@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import path from 'node:path';
+import fs from 'node:fs';
 import log from 'electron-log';
 import electronUpdater from 'electron-updater';
 
@@ -93,13 +94,29 @@ app.whenReady().then(async () => {
     shell.openExternal(location);
   });
 
-  ipcMain.handle('select-folder', () => {
-    return dialog.showSaveDialog({
-      title: 'Create Course Folder',
+  ipcMain.handle('select-folder', async () => {
+    // return dialog.showOpenDialog({
+    //   title: 'Output Folder',
+    //   buttonLabel: 'Select Output Folder',
+    //   properties: ['openDirectory', 'createDirectory']
+    // })
+    const result = await dialog.showSaveDialog({
+      title: 'Export Terrain Data',
+      properties: ['createDirectory'],
       nameFieldLabel: 'Course Folder Name',
-      message: 'Select the location to create your course folder',
+      message: 'Create your course folder',
       buttonLabel: 'Create Course Folder',
     });
+    if (!result.canceled && result.filePath) {
+      console.log(result.filePath);
+      if (fs.existsSync(result.filePath)) {
+        const error = 'This folder already exists. Please select a unique folder name for each export (e.g. My_Course_V3)';
+        await dialog.showErrorBox('Output Folder', error);
+        return { error };
+        // return { error: 'This folder already exists. Please select a unique folder name for each export (e.g. My_Course_V3)' };
+      }
+      return { filePath: result.filePath };
+    }
   });
 
   ipcMain.handle('quit-app', (event) => {

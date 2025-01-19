@@ -123,7 +123,6 @@ export default function Map(props) {
   }, []);
 
   const handleMapClick = useCallback((event) => {
-    console.log(event);
     if (!event.originalEvent.shiftKey) {
       return;
     }
@@ -435,11 +434,95 @@ export default function Map(props) {
         center: MAP_START_POINT, // starting position [lng, lat]. Note that lat must be set between -90 and 90
         zoom: MAP_START_ZOOM // starting zoom
       });
-      mapInstance.current.addControl(new MapboxGeocoder({
+
+      /* Given a query in the form "lng, lat" or "lat, lng"
+           * returns the matching geographic coordinate(s)
+           * as search results in carmen geojson format,
+           * https://github.com/mapbox/carmen/blob/master/carmen-geojson.md */
+      const coordinatesGeocoder = function (query) {
+        // Match anything which looks like
+        // decimal degrees coordinate pair.
+        const matches = query.match(
+          /^[ ]*(?:Lat: )?(-?\d+\.?\d*)[, ]+(?:Lng: )?(-?\d+\.?\d*)[ ]*$/i
+        );
+        if (!matches) {
+          return null;
+        }
+
+        function coordinateFeature(lng, lat) {
+          return {
+            center: [lng, lat],
+            geometry: {
+              type: 'Point',
+              coordinates: [lng, lat]
+            },
+            place_name: 'Set Center As: ' + lat + ', ' + lng,
+            place_type: ['coordinate'],
+            properties: {
+              latlng: true
+            },
+            type: 'Feature'
+          };
+        }
+
+        const coord1 = Number(matches[1]);
+        const coord2 = Number(matches[2]);
+        const geocodes = [];
+
+        if (coord1 < -90 || coord1 > 90) {
+          // must be lng, lat
+          geocodes.push(coordinateFeature(coord1, coord2));
+        }
+
+        if (coord2 < -90 || coord2 > 90) {
+          // must be lat, lng
+          geocodes.push(coordinateFeature(coord2, coord1));
+        }
+
+        if (geocodes.length === 0) {
+          // else could be either lng, lat or lat, lng
+          geocodes.push(coordinateFeature(coord1, coord2));
+          geocodes.push(coordinateFeature(coord2, coord1));
+        }
+
+        return geocodes;
+      };
+      const ctl = new MapboxGeocoder({
         accessToken: mapboxgl.accessToken,
         mapboxgl: mapboxgl,
-        types: ['place', 'address'].join(',')
-      }));
+        types: ['place', 'address'].join(','),
+        localGeocoder: coordinatesGeocoder,
+        reverseGeocode: true
+        // render: (item) => {
+        //   // console.log('item', item);
+        //   // console.log('ctl', ctl.query());
+        //   return `<div>${item.text}</div>`;
+        // }
+      });
+      ctl.on('loading', (query) => {
+        console.log('loading', query);
+      });
+      ctl.on('results', (query) => {
+        // console.log('ctl', ctl.query());
+        console.log('results', query);
+      });
+      ctl.on('result', (event) => {
+        console.log('result', event);
+        const { result } = event;
+        if (result.properties.latlng) {
+          // set as center point
+          console.log('result.center', result.center);
+          const latlng = new mapboxgl.LngLat(result.center[0], result.center[1]);
+          console.log('latlng', latlng);
+          markerInstance.current.remove();
+          markerInstance.current.setLngLat(latlng);
+          markerInstance.current.addTo(mapInstance.current);
+          setCenterPosition(latlng);
+          ctl.clear();
+
+        }
+      });
+      mapInstance.current.addControl(ctl);
       mapInstance.current.addControl(new mapboxgl.NavigationControl());
       mapInstance.current.on('load', addLayers);
 

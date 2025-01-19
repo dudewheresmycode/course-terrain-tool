@@ -102,10 +102,8 @@ export class Job extends EventEmitter {
       } : {}
     };
 
-    const taskPipeline = [
-      new CreateDirectoryTask({
-        directory: this.courseDirectory
-      }),
+
+    const terrainDataTasks = [
       new CreateDirectoryTask({
         directory: downloadDirectory
       }),
@@ -154,10 +152,21 @@ export class Job extends EventEmitter {
         prefix: 'inner',
         outputDirectory: rawDataDirectory
       }),
+    ];
 
+    const taskPipeline = [
       new CreateDirectoryTask({
-        directory: overlaysDirectory
+        directory: this.courseDirectory
       }),
+
+      ...this.data.tasksEnabled.terrain ? terrainDataTasks : [],
+
+      // if we have overlays
+      ...Object.keys(this.data.tasksEnabled.overlays).some(key => this.data.tasksEnabled[key]) ? [
+        new CreateDirectoryTask({
+          directory: overlaysDirectory
+        }),
+      ] : [],
 
       ...(this.data.tasksEnabled.overlays.google || this.data.tasksEnabled.overlays.bing) ? [
         new GenerateSatelliteImageryTask({
@@ -170,37 +179,43 @@ export class Job extends EventEmitter {
       ] : [],
 
 
-      new CreateDirectoryTask({
-        directory: shapefilesDirectory
-      }),
+      ...this.data.tasksEnabled.shapefiles ? [
+        new CreateDirectoryTask({
+          directory: shapefilesDirectory
+        }),
+        new GenerateShapefilesTask({
+          prefix: 'inner',
+          outputDirectory: shapefilesDirectory,
+          // coordinates: this.data.coordinates.inner,
+          coordinates: this.data._bounds.inner,
+          tasksEnabled: this.data.tasksEnabled
+        }),
+      ] : [],
 
-      new GenerateShapefilesTask({
-        prefix: 'inner',
-        outputDirectory: shapefilesDirectory,
-        // coordinates: this.data.coordinates.inner,
-        coordinates: this.data._bounds.inner,
-        tasksEnabled: this.data.tasksEnabled
-      }),
 
       ...isOuterEnabled ? [
-        new RasterizeLAZTask({
-          prefix: 'outer',
-          resolution: this.data.resolution.outer,
-          outputDirectory: tiffDirectory,
-          coordinates: this.data._bounds.outer
-        }),
-        new GeoTiffFillNoDataTask({
-          prefix: 'outer',
-          resolution: this.data.resolution.outer,
-          coordinates: this.data._bounds.outer,
-          outputDirectory: tiffDirectory
-        }),
-        new GeoTiffStatsTask({ prefix: 'outer' }),
-        new GeoTiffToRaw({
-          prefix: 'outer',
-          outputDirectory: rawDataDirectory
-        }),
-        ...(this.data.tasksEnabled.google || this.data.tasksEnabled.bing) ? [
+
+        ...this.data.tasksEnabled.terrain ? [
+          new RasterizeLAZTask({
+            prefix: 'outer',
+            resolution: this.data.resolution.outer,
+            outputDirectory: tiffDirectory,
+            coordinates: this.data._bounds.outer
+          }),
+          new GeoTiffFillNoDataTask({
+            prefix: 'outer',
+            resolution: this.data.resolution.outer,
+            coordinates: this.data._bounds.outer,
+            outputDirectory: tiffDirectory
+          }),
+          new GeoTiffStatsTask({ prefix: 'outer' }),
+          new GeoTiffToRaw({
+            prefix: 'outer',
+            outputDirectory: rawDataDirectory
+          }),
+        ] : [],
+
+        ...(this.data.tasksEnabled.overlays.google || this.data.tasksEnabled.overlays.bing) ? [
           new GenerateSatelliteImageryTask({
             prefix: 'outer',
             outputDirectory: overlaysDirectory,
@@ -210,18 +225,20 @@ export class Job extends EventEmitter {
           }),
         ] : [],
 
-        new GenerateShapefilesTask({
-          prefix: 'outer',
-          outputDirectory: shapefilesDirectory,
-          // coordinates: this.data.coordinates.outer,
-          coordinates: this.data._bounds.outer,
-          tasksEnabled: this.data.tasksEnabled
-        }),
+        ...this.data.tasksEnabled.shapefiles ? [
+          new GenerateShapefilesTask({
+            prefix: 'outer',
+            outputDirectory: shapefilesDirectory,
+            // coordinates: this.data.coordinates.outer,
+            coordinates: this.data._bounds.outer,
+            tasksEnabled: this.data.tasksEnabled
+          }),
+        ] : []
 
       ] : [],
 
 
-      ...this.data.tasksEnabled.hillshade ? [
+      ...this.data.tasksEnabled.terrain && this.data.tasksEnabled.hillshade ? [
         new GenerateHillShadeImageTask({
           outputDirectory: overlaysDirectory
         }),
@@ -230,6 +247,7 @@ export class Job extends EventEmitter {
       new CreateCSVTask({
         outputDirectory: this.courseDirectory
       }),
+
 
       new CreateSVGTask({
         outputDirectory: this.courseDirectory
