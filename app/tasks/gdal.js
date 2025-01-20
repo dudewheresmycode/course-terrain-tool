@@ -193,7 +193,8 @@ export class GeoTiffToRaw extends BaseTask {
     }
     const { name: filename } = path.parse(inputFile);
     const destFile = path.join(this.outputDirectory, `${filename}.raw`);
-    // gdal_translate –ot UInt16 –scale –of ENVI –outsize 1025 1025 srtm_36_02_warped_cropped.tif heightmap.raw
+    // gdal_translate –ot UInt16 –of ENVI –outsize 1025 1025 srtm_36_02_warped_cropped.tif heightmap.raw
+    // gdal_translate -of ENVI –ot UInt16 -scale 794.801 861.773 0 65535 –outsize 4097 4097 -r bilinear
     await runGDALCommand(GDAL_BINARIES.gdal_translate, [
       '-of', 'ENVI', '-ot', 'UInt16',
       '-scale', stats.min, stats.max, '0', '65535',
@@ -329,10 +330,10 @@ export class GenerateShapefilesTask extends BaseTask {
     this.tasksEnabled = tasksEnabled;
   }
   async process(data) {
-    if (!this.tasksEnabled.shapefiles[this.prefix]) {
-      log.info(`Skipping shapefile task for ${this.prefix}`);
-      return;
-    }
+    // if (!this.tasksEnabled.shapefiles) {
+    //   log.info('Skipping shapefile task');
+    //   return;
+    // }
 
     const outputFile = path.join(this.outputDirectory, `${this.prefix}.shp`);
     const geoJSONFile = path.join(this.outputDirectory, `${this.prefix}.geojson`);

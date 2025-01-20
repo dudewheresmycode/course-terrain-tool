@@ -90,18 +90,25 @@ export class Job extends EventEmitter {
     const code = `${first.crs.id.authority}:${first.crs.id.code}`;
     this.data._inputSRS = code;
     this.data._containsMixedProjections = this.data.dataSource.items.some(item => this.data._inputSRS !== code);
-
+    console.log('_containsMixedProjections', this.data._containsMixedProjections);
+    console.log('this.data._inputCRS.proj4', this.data._inputCRS.proj4);
 
     const [nativeCenter] = reprojectBounds(WGS84, this.data._inputCRS.proj4, this.data.coordinates.center);
 
+    // const nativeInner = reprojectBounds(WGS84, this.data._inputCRS.proj4, ...this.data.coordinates.inner);
+    // const nativeOuter = reprojectBounds(WGS84, this.data._inputCRS.proj4, ...this.data.coordinates.outer);
+
     this.data._bounds = {
       center: nativeCenter,
+      // inner: nativeInner,
       inner: getBoundsForDistance(nativeCenter, this.data.distance, this.data._inputCRS.unit),
       ...this.data.outerDistance ? {
         outer: getBoundsForDistance(nativeCenter, this.data.distance + this.data.outerDistance, this.data._inputCRS.unit),
+        // outer: nativeOuter
       } : {}
     };
 
+    console.log('this.data._bounds', this.data._bounds);
 
     const terrainDataTasks = [
       new CreateDirectoryTask({
@@ -114,6 +121,29 @@ export class Job extends EventEmitter {
       new CreateDirectoryTask({
         directory: lazDataDirectory
       }),
+
+      // generate shapefiles
+      ...this.data.tasksEnabled.shapefiles ? [
+        new CreateDirectoryTask({
+          directory: shapefilesDirectory
+        }),
+        new GenerateShapefilesTask({
+          prefix: 'inner',
+          outputDirectory: shapefilesDirectory,
+          // coordinates: this.data.coordinates.inner,
+          coordinates: this.data._bounds.inner,
+          tasksEnabled: this.data.tasksEnabled
+        }),
+        ...isOuterEnabled ? [
+          new GenerateShapefilesTask({
+            prefix: 'outer',
+            outputDirectory: shapefilesDirectory,
+            // coordinates: this.data.coordinates.outer,
+            coordinates: this.data._bounds.outer,
+            tasksEnabled: this.data.tasksEnabled
+          }),
+        ] : []
+      ] : [],
 
       new DownloadTask({
         downloadDirectory
@@ -162,11 +192,11 @@ export class Job extends EventEmitter {
       ...this.data.tasksEnabled.terrain ? terrainDataTasks : [],
 
       // if we have overlays
-      ...Object.keys(this.data.tasksEnabled.overlays).some(key => this.data.tasksEnabled[key]) ? [
-        new CreateDirectoryTask({
-          directory: overlaysDirectory
-        }),
-      ] : [],
+      // ...Object.keys(this.data.tasksEnabled.overlays).some(key => this.data.tasksEnabled[key]) ? [
+      new CreateDirectoryTask({
+        directory: overlaysDirectory
+      }),
+      // ] : [],
 
       ...(this.data.tasksEnabled.overlays.google || this.data.tasksEnabled.overlays.bing) ? [
         new GenerateSatelliteImageryTask({
@@ -177,21 +207,6 @@ export class Job extends EventEmitter {
           tasksEnabled: this.data.tasksEnabled
         }),
       ] : [],
-
-
-      ...this.data.tasksEnabled.shapefiles ? [
-        new CreateDirectoryTask({
-          directory: shapefilesDirectory
-        }),
-        new GenerateShapefilesTask({
-          prefix: 'inner',
-          outputDirectory: shapefilesDirectory,
-          // coordinates: this.data.coordinates.inner,
-          coordinates: this.data._bounds.inner,
-          tasksEnabled: this.data.tasksEnabled
-        }),
-      ] : [],
-
 
       ...isOuterEnabled ? [
 
@@ -225,20 +240,11 @@ export class Job extends EventEmitter {
           }),
         ] : [],
 
-        ...this.data.tasksEnabled.shapefiles ? [
-          new GenerateShapefilesTask({
-            prefix: 'outer',
-            outputDirectory: shapefilesDirectory,
-            // coordinates: this.data.coordinates.outer,
-            coordinates: this.data._bounds.outer,
-            tasksEnabled: this.data.tasksEnabled
-          }),
-        ] : []
 
       ] : [],
 
 
-      ...this.data.tasksEnabled.terrain && this.data.tasksEnabled.hillshade ? [
+      ...this.data.tasksEnabled.terrain && this.data.tasksEnabled.overlays.hillshade ? [
         new GenerateHillShadeImageTask({
           outputDirectory: overlaysDirectory
         }),

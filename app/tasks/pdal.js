@@ -156,11 +156,13 @@ async function scrapeCRSFromXML(item) {
   };
 }
 
-async function refreshBounds(item) {
+async function refreshBounds(item, proj4) {
   if (!item?.crs?.id || !item?.bbox?.coordinates) {
     return {};
   }
-  const proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
+  if (!proj4) {
+    proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
+  }
 
   // item.crs.proj4 = proj4;
   const newBounds = reprojectBox(proj4, ...item.bbox.coordinates);
@@ -395,14 +397,24 @@ export class MergeLAZTask extends BaseTask {
           out_srs: data._inputSRS,
         }] : [],
 
+        // {
+        //   type: 'filters.crop',
+        //   // input SRS is our mapbox map's projection (EPSG:4326/WGS84)
+        //   // a_srs: 'EPSG:4326',
+        //   // polygon: coordinatesToPolygon(nativeCoordinates)
+        //   polygon: coordinatesToPolygon(data._bounds.outer || data._bounds.inner)
+        // },
+        // merge into single las file
+
         {
           type: 'filters.crop',
           // input SRS is our mapbox map's projection (EPSG:4326/WGS84)
           // a_srs: 'EPSG:4326',
           // polygon: coordinatesToPolygon(nativeCoordinates)
+          // a_srs: data._inputSRS,
           polygon: coordinatesToPolygon(data._bounds.outer || data._bounds.inner)
         },
-        // merge into single las file
+
         {
           type: 'writers.las',
           // compression: true,
@@ -440,6 +452,9 @@ export class OptimizeLAZTask extends BaseTask {
           filename: data._outputFiles.las
           // ...data._inputSRS ? { override_srs: data._inputSRS } : {}
         },
+
+
+
         // TODO: move the filtering to a separate step
         // this way we use the cropped/merged LAS file to generate vegetation masks
         // and heat-maps using data we're currently filtering out

@@ -209,51 +209,56 @@ export default function Map(props) {
         // const tileLayers = [rasterLayerId, layerId, lineLayerId, fillLayerId];
 
         let fillLayer;
-        let geoJSONData = {};
+        let geoJSONData;
+        let coordinates;
 
-        if (item.boundingBox) {
+        if (item?.bbox?.boundary) {
+          geoJSONData = item.bbox.boundary;
+          [coordinates] = item.bbox.boundary.geometry.coordinates;
+        } else if (item.boundingBox) {
           // USGS uses boundingBox (we should convert to bbox in our API)
           // TODO: convert to the new system that imports use
-          const coordinates = [
+          coordinates = [
             [item.boundingBox?.minX, item.boundingBox?.maxY],
             [item.boundingBox?.maxX, item.boundingBox?.maxY],
             [item.boundingBox?.maxX, item.boundingBox?.minY],
             [item.boundingBox?.minX, item.boundingBox?.minY],
+            [item.boundingBox?.minX, item.boundingBox?.maxY],
           ];
 
-          mapInstance.current.addSource(sourceId, {
-            'type': 'image',
-            'url': item.previewGraphicURL,
-            coordinates
-          });
-
-          mapInstance.current.addLayer({
-            id: rasterLayerId,
-            beforeId: BASE_LAYERS[0],
-            'type': 'raster',
-            'source': sourceId,
-            'slot': 'data_source',
-            'paint': {
-              'raster-opacity': 0.4,
-              'raster-fade-duration': 0
-            }
-          });
 
           geoJSONData = {
             'type': 'Feature',
             'geometry': {
               'type': 'Polygon',
-              'coordinates': [[...coordinates, coordinates[0]]]
+              'coordinates': [coordinates]
             }
           };
-        } else {
-          geoJSONData = item?.bbox?.boundary;
         }
 
-
-        console.log('geoJSONData', geoJSONData);
         // add polygon for geoJSON
         if (geoJSONData) {
+
+          if (item.previewGraphicURL) {
+            mapInstance.current.addSource(sourceId, {
+              'type': 'image',
+              'url': item.previewGraphicURL,
+              coordinates: coordinates.slice(0, 4)
+            });
+
+            mapInstance.current.addLayer({
+              id: rasterLayerId,
+              beforeId: BASE_LAYERS[0],
+              'type': 'raster',
+              'source': sourceId,
+              'slot': 'data_source',
+              'paint': {
+                'raster-opacity': 0.4,
+                'raster-fade-duration': 0
+              }
+            });
+          }
+
           mapInstance.current.addSource(geoJSONSourceId, {
             'type': 'geojson',
             'data': geoJSONData
@@ -389,7 +394,6 @@ export default function Map(props) {
 
   useEffect(() => {
     if (!mapInstance.current) { return; }
-    console.log('centerPosition/distance change', centerPosition);
     updateBoxPosition();
     markerInstance.current.on('drag', handleMapDrag);
     return () => {
@@ -499,21 +503,19 @@ export default function Map(props) {
         //   return `<div>${item.text}</div>`;
         // }
       });
-      ctl.on('loading', (query) => {
-        console.log('loading', query);
-      });
-      ctl.on('results', (query) => {
-        // console.log('ctl', ctl.query());
-        console.log('results', query);
-      });
+      // ctl.on('loading', (query) => {
+      //   console.log('loading', query);
+      // });
+      // ctl.on('results', (query) => {
+      //   // console.log('ctl', ctl.query());
+      //   console.log('results', query);
+      // });
       ctl.on('result', (event) => {
-        console.log('result', event);
         const { result } = event;
         if (result.properties.latlng) {
           // set as center point
           console.log('result.center', result.center);
           const latlng = new mapboxgl.LngLat(result.center[0], result.center[1]);
-          console.log('latlng', latlng);
           markerInstance.current.remove();
           markerInstance.current.setLngLat(latlng);
           markerInstance.current.addTo(mapInstance.current);
