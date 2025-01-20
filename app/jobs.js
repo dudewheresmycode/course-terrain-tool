@@ -90,14 +90,13 @@ export class Job extends EventEmitter {
     const code = `${first.crs.id.authority}:${first.crs.id.code}`;
     this.data._inputSRS = code;
     this.data._containsMixedProjections = this.data.dataSource.items.some(item => this.data._inputSRS !== code);
-    console.log('_containsMixedProjections', this.data._containsMixedProjections);
-    console.log('this.data._inputCRS.proj4', this.data._inputCRS.proj4);
 
+    // re-project the center point to our data source's CRS
     const [nativeCenter] = reprojectBounds(WGS84, this.data._inputCRS.proj4, this.data.coordinates.center);
 
-    // const nativeInner = reprojectBounds(WGS84, this.data._inputCRS.proj4, ...this.data.coordinates.inner);
-    // const nativeOuter = reprojectBounds(WGS84, this.data._inputCRS.proj4, ...this.data.coordinates.outer);
-
+    // calculate a new bounding box in the native coordinate system
+    // NOTE: the box you defined on the map is just a guide and won't be perfectly accurate to the actual box
+    // but we'll use this calculated box for every step so that all assets should line up
     this.data._bounds = {
       center: nativeCenter,
       // inner: nativeInner,
