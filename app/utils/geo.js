@@ -1,6 +1,5 @@
 import proj4 from 'proj4';
 import { feet } from '../tasks/stats.js';
-import mproj from 'mproj';
 
 export const WGS84 = '+proj=longlat +datum=WGS84 +no_defs +type=crs';
 
