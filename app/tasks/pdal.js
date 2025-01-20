@@ -488,7 +488,7 @@ export class OptimizeLAZTask extends BaseTask {
             'Classification[1.1:2.1]', // Ground
             'Classification[8.1:9.1]', // Water
             'Classification[10.1:11.1]', // Road
-            'Classification[16.1:17.1]' // Bridges
+            // 'Classification[16.1:17.1]' // Bridges
           ].join(',') //Z[1.1:2.1],
           // where: '(Classification != 0)'
         },

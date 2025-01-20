@@ -261,7 +261,7 @@ export class GenerateSatelliteImageryTask extends BaseTask {
             GDAL_HTTP_RETRY_CODES: 'ALL',
             GDAL_DEFAULT_WMS_CACHE_PATH: app.getPath('temp'),
             GDAL_HTTP_MAX_RETRY: 10,
-            GDAL_HTTP_RETRY_DELAY: 2,
+            GDAL_HTTP_RETRY_DELAY: 1,
             GDAL_HTTP_SSL_VERIFYSTATUS: 'NO'
           }
         });

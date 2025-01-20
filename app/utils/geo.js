@@ -9,9 +9,10 @@ const r_earth = 6378;
 export function addKilometers(latlng, kilometers, unit) {
   const [lng, lat] = latlng;
   const meters = kilometers * 1000;
-  if (unit.startsWith('met') || unit === 'm') {
+  const unitClean = unit.toLowerCase();
+  if (unitClean.startsWith('met') || unitClean === 'm') {
     return [lng + meters, lat + meters];
-  } else if (unit === 'foot' || unit === 'feet') {
+  } else if (unitClean === 'foot' || unitClean === 'feet' || unitClean === 'ft') {
     return [lng + feet(meters), lat + feet(meters)];
   }
   // return degrees by default?
