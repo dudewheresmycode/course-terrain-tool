@@ -8,14 +8,13 @@ const r_earth = 6378;
 
 export function addKilometers(latlng, kilometers, unit) {
   const [lng, lat] = latlng;
-  console.log('latlng', latlng, lng, lat);
   const meters = kilometers * 1000;
-  if (unit === 'meters' || unit === 'meteres') {
+  if (unit.startsWith('met') || unit === 'm') {
     return [lng + meters, lat + meters];
   } else if (unit === 'foot' || unit === 'feet') {
     return [lng + feet(meters), lat + feet(meters)];
   }
-  // return degrees by default
+  // return degrees by default?
   const new_longitude = lng + (kilometers / r_earth) * (180 / Math.PI) / Math.cos(lat * Math.PI / 180);
   const new_latitude = lat + (kilometers / r_earth) * (180 / Math.PI);
   return [new_longitude, new_latitude];

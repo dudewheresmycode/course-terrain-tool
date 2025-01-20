@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
-import { Paper, styled } from '@mui/material';
+import { Paper, styled, TextField } from '@mui/material';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -19,6 +19,8 @@ import MuiAccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import WarningIcon from '@mui/icons-material/Warning';
 import FolderIcon from '@mui/icons-material/Folder';
+import HelpIcon from '@mui/icons-material/Help';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 import RangeInput from './RangeInput';
 import { Button, Checkbox, DialogActions, Grid2 } from '@mui/material';
@@ -27,6 +29,7 @@ import { ProgressDialogActions, ProgressDialogContent } from './ProgressDialog';
 const Accordion = styled((props) => (
   <MuiAccordion disableGutters={true} elevation={props.expanded ? 1 : 0} square={true} {...props} />
 ))(({ theme }) => ({
+  backgroundColor: 'rgba(0, 0, 0, 0)',
   // border: `1px solid ${theme.palette.divider}`,
   '&:not(:last-child)': {
     borderBottom: 0,
@@ -98,16 +101,16 @@ function ResolutionMath(props) {
 
 function SettingsRow(props) {
   return (
-    <Paper elevation={0} square={true}>
+    <Box sx={{ px: 3 }}>
       <Grid2 container={true} sx={{ alignItems: 'center', fontSize: 12 }}>
-        <Grid2 size={4} sx={{ pl: 2, py: 2 }}>
+        <Grid2 size={4} sx={{ py: 2 }}>
           {props.label}
         </Grid2>
         <Grid2 size={8} sx={{ py: 2 }}>
           {props.children}
         </Grid2>
       </Grid2>
-    </Paper>
+    </Box>
   )
 }
 
@@ -117,27 +120,22 @@ export default function JobDialog(props) {
   const [tifResolution, setTifResolution] = useState(0.5); // default is 40 cm
   const [tifResolutionOuter, setTifResolutionOuter] = useState(1); // default is 2m
   const [expandedPanel, setExpandedPanel] = useState('folder');
+  const [smoothRadius, setSmoothRadius] = useState(2); // default is 40 cm
 
   const [tasksEnabled, setTasksEnabled] = useState({
-    raster: true,
-
-    // remove these
-    google: true,
-    bing: true,
-    hillshade: true,
 
     terrain: true,
+    shapefiles: true,
+    filters: {
+      smrf: false,
+      zsmooth: false,
+    },
     overlays: {
       google: true,
       bing: true,
       hillshade: true,
-    },
-    shapefiles: {
-      inner: true,
-      outer: !!props.outerDistance
     }
   });
-
 
 
   const outputFolderTruncated = useMemo(() => {
@@ -196,9 +194,11 @@ export default function JobDialog(props) {
   }, [outputFolder]);
 
   const handleFolderClick = async () => {
-    const res = await window.courseterrain.selectFolder();
-    if (!res.canceled && res.filePath) {
-      setOutputFolder(res.filePath);
+    const folder = await window.courseterrain.selectFolder();
+    console.log('res', folder);
+    // if (!res.canceled && res.filePaths?.length) {
+    if (folder?.filePath) {
+      setOutputFolder(folder.filePath);
       setExpandedPanel('terrain')
     }
   }
@@ -211,8 +211,6 @@ export default function JobDialog(props) {
     if (!outputFolder) {
       return alert('Please set an output folder');
     }
-    // setCourseName(response.filePath.split(/[\/\\]/g).pop());
-    // setOutputFolder(response.filePath);
 
     const { distance, coordinates, outerDistance } = props;
     const payload = {
@@ -225,23 +223,24 @@ export default function JobDialog(props) {
       resolution: {
         inner: tifResolution,
         outer: tifResolutionOuter
-      }
+      },
+      smoothRadius
     };
     console.log('submitting job', payload);
     setIsRunning(true);
-    // return;
-    // setProgressDialogOpen(true);
-    // setIsJobFinished(false);
-    // setJobError(false);
+    // // return;
+    // // setProgressDialogOpen(true);
+    // // setIsJobFinished(false);
+    // // setJobError(false);
     window.courseterrain.submitJob(payload);
 
   }, [
-    // courseName,
     props.coordinates,
     props.distance,
     props.outerDistance,
     props.dataSource,
     outputFolder,
+    smoothRadius,
     tasksEnabled,
     tifResolution,
     tifResolutionOuter
@@ -281,6 +280,9 @@ export default function JobDialog(props) {
     // event.preventDefault();
   };
 
+  const handleSmoothRadiusChange = (event) => {
+    setSmoothRadius(event.target.value);
+  };
   // useEffect(() => {
   //   setTasksEnabled((old) => {
   //     const newobj = { ...old };
@@ -291,7 +293,7 @@ export default function JobDialog(props) {
 
   return (
     <Dialog
-      // scroll="paper"
+      scroll="paper"
       open={props.open}
       fullWidth={true}
       maxWidth="sm"
@@ -302,110 +304,7 @@ export default function JobDialog(props) {
       {isRunning ? (
         <ProgressDialogContent {...props} />
       ) : (
-        <>
-          {/* <DialogContent dividers={true}>
-
-            <Grid2 container={true}>
-              <Grid2 display="flex" alignItems="center" size={3} sx={{ pt: 4 }}>Output Folder</Grid2>
-              <Grid2 display="flex" alignItems="center" size={9} sx={{ pt: 3 }}>
-                {outputFolder ?
-                  (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Tooltip title="Change Folder">
-                        <IconButton onClick={handleFolderClick} sx={{ mr: 1 }}>
-                          <FolderIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Typography component="div" sx={{ fontSize: 12 }} noWrap={true}>
-                        {
-                          outputFolder.length > 30 ?
-                            `${[outputFolder.substr(0, 18), String.fromCharCode(8230), outputFolder.slice(-32)].join('')}` :
-                            outputFolder
-                        }
-                      </Typography>
-                    </Box>
-                  ) :
-                  (<Button color="primary" variant="outlined" onClick={handleFolderClick}>Set Output Folder</Button>)}
-              </Grid2>
-
-              <Grid2 size={3} sx={{ pt: 4 }}>
-                Raster Settings
-              </Grid2>
-              <Grid2 size={9} sx={{ pt: 4 }}>
-
-                <FormControl fullWidth={true}>
-                  <InputLabel id="resolution-select-label">Inner Resolution</InputLabel>
-                  <RangeInput
-                    min={0.1}
-                    max={2}
-                    step={0.1}
-                    suffix={'m'}
-                    value={tifResolution}
-                    disabled={!tasksEnabled.raster}
-                    onChange={handleResolutionChange}
-                  />
-                  <ResolutionMath size={innerResolutionDimensions} />
-
-                </FormControl>
-                {
-                  props.outerDistance ? (
-                    <FormControl fullWidth={true} sx={{ mt: 3 }}>
-                      <InputLabel id="resolution-select-label">Outer Resolution</InputLabel>
-                      <RangeInput
-                        min={0.1}
-                        max={10}
-                        step={0.1}
-                        suffix={'m'}
-                        value={tifResolutionOuter}
-                        disabled={!tasksEnabled.raster}
-                        onChange={handleResolutionOuterChange}
-                      />
-                      <ResolutionMath size={outerResolutionDimensions} />
-
-                    </FormControl>
-                  ) : null
-                }
-
-              </Grid2>
-
-              <Grid2 size={3} sx={{ pt: 4 }}>
-                <Typography>Overlays</Typography>
-              </Grid2>
-              <Grid2 size={9} sx={{ pt: 3 }}>
-                <FormGroup>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={tasksEnabled.google}
-                        onChange={(event) => handleTaskChange(event, 'google')}
-                      />
-                    }
-                    label="Google Satellite"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={tasksEnabled.bing}
-                        onChange={(event) => handleTaskChange(event, 'bing')}
-                      />
-                    }
-                    label="Bing Satellite"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={tasksEnabled.hillshade}
-                        onChange={(event) => handleTaskChange(event, 'hillshade')}
-                      />
-                    }
-                    label="Hillshade"
-                  />
-                </FormGroup>
-
-              </Grid2>
-            </Grid2>
-
-          </DialogContent> */}
+        <DialogContent sx={{ p: 0 }}>
 
           <SettingsRow label="Output Folder">
             {outputFolder ?
@@ -421,7 +320,17 @@ export default function JobDialog(props) {
                   </Typography>
                 </Box>
               ) :
-              (<Button color="primary" variant="outlined" onClick={handleFolderClick}>Set Output Folder</Button>)}
+              (
+                <Button
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                  fullWidth={true}
+                  onClick={handleFolderClick}
+                >
+                  Set Output Folder
+                </Button>
+              )}
           </SettingsRow>
 
 
@@ -452,7 +361,7 @@ export default function JobDialog(props) {
                   step={0.1}
                   suffix={'m'}
                   value={tifResolution}
-                  disabled={!tasksEnabled.raster}
+                  disabled={!tasksEnabled.terrain}
                   onChange={handleResolutionChange}
                 />
                 <ResolutionMath size={innerResolutionDimensions} />
@@ -467,13 +376,11 @@ export default function JobDialog(props) {
                   step={0.1}
                   suffix={'m'}
                   value={tifResolutionOuter}
-                  disabled={!props.outerDistance || !tasksEnabled.raster}
+                  disabled={!props.outerDistance || !tasksEnabled.terrain}
                   onChange={handleResolutionOuterChange}
                 />
                 <ResolutionMath size={outerResolutionDimensions} />
-
               </FormControl>
-
 
             </AccordionDetails>
           </Accordion>
@@ -527,7 +434,7 @@ export default function JobDialog(props) {
                   label="Hillshade"
                 />
               </FormGroup>
-              {/* <pre>{JSON.stringify(tasksEnabled, null, 1)}</pre> */}
+
             </AccordionDetails>
           </Accordion>
 
@@ -535,52 +442,99 @@ export default function JobDialog(props) {
           <Accordion expanded={expandedPanel === 'shapefiles'} onChange={handlePanelChange('shapefiles')}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Grid2 container={true} sx={{ display: 'flex', alignItems: 'center' }}>
-                <Grid2 size={4}>
-                  <Checkbox
-                    size="small"
-                    sx={{ ml: -1 }}
-                    checked={tasksEnabled.overlays}
-                    onChange={(event) => handleTaskChange(event, 'shapefiles')}
-                  />
-                  Shapefiles
+                <Grid2 size={4} sx={{ display: 'flex', alignItems: 'center' }}>
+                  <SettingsIcon sx={{ fontSize: '1rem', mr: 1, my: 1 }} />
+                  Advanced Settings
                 </Grid2>
                 <Grid2 size={8}>
-                  {Object.keys(tasksEnabled.overlays).filter(k => tasksEnabled.shapefiles[k]).join(', ')}
+                  {[
+                    tasksEnabled.shapefiles ? 'Shapefiles' : null,
+                    tasksEnabled.filters.smrf ? 'SMRF' : null,
+                    tasksEnabled.filters.zsmooth ? 'Z-Smoothing' : null
+                  ].filter(Boolean).join(', ')}
                 </Grid2>
               </Grid2>
-
             </AccordionSummary>
             <AccordionDetails>
-              <FormGroup>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={tasksEnabled.shapefiles.inner}
-                      onChange={(event) => handleTaskChange(event, 'shapefiles.inner')}
+                      checked={tasksEnabled.shapefiles}
+                      onChange={(event) => handleTaskChange(event, 'shapefiles')}
                     />
                   }
-                  label="Inner Shapefile (.shp)"
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Typography>Generate Shapefiles (.shp)</Typography>
+                      <Tooltip title={
+                        'Shapefiles of the inner and outer boxes will contain the data\'s CRS and can be imported into GIS applications'
+                      }>
+                        <HelpIcon sx={{ ml: 1, fontSize: 15 }} />
+                      </Tooltip>
+                    </Box>
+                  }
                 />
                 <FormControlLabel
                   control={
                     <Checkbox
-                      disabled={!props.outerDistance}
-                      checked={tasksEnabled.shapefiles.outer}
-                      onChange={(event) => handleTaskChange(event, 'shapefiles.outer')}
+                      checked={tasksEnabled.filters.smrf}
+                      onChange={(event) => handleTaskChange(event, 'filters.smrf')}
                     />
                   }
-                  label="Outer Shapefile  (.shp)"
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Typography>SMRF Filter</Typography>
+                      <Tooltip title={
+                        'The Simple Morphological Filter (SMRF) attempts to classify ground points from unclassified point cloud data. We recommend enabling this if your data contains raw or noisy elevation data without existing classifications.'
+                      }>
+                        <HelpIcon sx={{ ml: 1, fontSize: 15 }} />
+                      </Tooltip>
+                    </Box>
+                  }
                 />
-              </FormGroup>
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={tasksEnabled.filters.zsmooth}
+                        onChange={(event) => handleTaskChange(event, 'filters.zsmooth')}
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography>Z-Smoothing</Typography>
+                        <Tooltip title={
+                          'The Z-Smoothing filter can be used to smooth out bumpy terrain data by finding the median Z value of neighboring points within a set radius.'
+                        }>
+                          <HelpIcon sx={{ ml: 1, fontSize: 15 }} />
+                        </Tooltip>
+                      </Box>
+                    }
+                  />
+                  <FormControl>
+                    <InputLabel id="resolution-select-label">Smooth Radius</InputLabel>
+                    <RangeInput
+                      min={1}
+                      max={20}
+                      step={0.1}
+                      disabled={!tasksEnabled.filters.zsmooth}
+                      value={smoothRadius}
+                      onChange={handleSmoothRadiusChange}
+                    />
+                  </FormControl>
+                </FormGroup>
+              </Box>
             </AccordionDetails>
           </Accordion>
-        </>
+        </DialogContent>
       )}
+
       <DialogActions>
         <ProgressDialogActions
           isFinished={props.isFinished}
           isRunning={isRunning}
-          outputFolder={outputFolder}
+          exportDisabled={!outputFolder}
           onSubmit={handleJobSubmit}
           onClose={handleClose}
           onCancel={handleCancelJob}

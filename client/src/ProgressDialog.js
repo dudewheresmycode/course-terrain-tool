@@ -38,7 +38,7 @@ export function ProgressDialogActions(props) {
   return (
     <>
       <Button variant="outlined" color="secondary" onClick={props.onClose}>Cancel</Button>
-      <Button variant="outlined" color="primary" disabled={!props.outputFolder} onClick={props.onSubmit}>Export Files</Button>
+      <Button variant="outlined" color="primary" disabled={props.exportDisabled} onClick={props.onSubmit}>Export Files</Button>
     </>
   )
 }

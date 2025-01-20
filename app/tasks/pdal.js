@@ -156,11 +156,13 @@ async function scrapeCRSFromXML(item) {
   };
 }
 
-async function refreshBounds(item) {
+async function refreshBounds(item, proj4) {
   if (!item?.crs?.id || !item?.bbox?.coordinates) {
     return {};
   }
-  const proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
+  if (!proj4) {
+    proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
+  }
 
   // item.crs.proj4 = proj4;
   const newBounds = reprojectBox(proj4, ...item.bbox.coordinates);
@@ -304,11 +306,27 @@ export class RasterizeLAZTask extends BaseTask {
           type: 'filters.crop',
           polygon: coordinatesToPolygon(this.coordinates)
         },
+        ...data.tasksEnabled.filters.zsmooth ? [
+          {
+            type: 'filters.zsmooth',
+            dim: 'UserData',
+            radius: data.smoothRadius || 2,
+            // medianpercent: 50
+          },
+          {
+            type: 'filters.assign',
+            value: 'Z = UserData'
+          }
+        ] : [],
         {
           filename: tiffOutputFile,
           gdaldriver: 'GTiff',
-          // supported values are “min”, “max”, “mean”, “idw”, “count”, “stdev” and “all”.
+          // supported values are min, max, mean, idw, count, stdev and all
           output_type: 'mean',
+          // power: 10,
+          // output_type: 'mean',
+          // TODO: make checkbox in settings
+          // radius: resolution * Math.sqrt(10),
           resolution,
           type: 'writers.gdal'
         }
@@ -379,14 +397,24 @@ export class MergeLAZTask extends BaseTask {
           out_srs: data._inputSRS,
         }] : [],
 
+        // {
+        //   type: 'filters.crop',
+        //   // input SRS is our mapbox map's projection (EPSG:4326/WGS84)
+        //   // a_srs: 'EPSG:4326',
+        //   // polygon: coordinatesToPolygon(nativeCoordinates)
+        //   polygon: coordinatesToPolygon(data._bounds.outer || data._bounds.inner)
+        // },
+        // merge into single las file
+
         {
           type: 'filters.crop',
           // input SRS is our mapbox map's projection (EPSG:4326/WGS84)
           // a_srs: 'EPSG:4326',
           // polygon: coordinatesToPolygon(nativeCoordinates)
+          // a_srs: data._inputSRS,
           polygon: coordinatesToPolygon(data._bounds.outer || data._bounds.inner)
         },
-        // merge into single las file
+
         {
           type: 'writers.las',
           // compression: true,
@@ -424,26 +452,31 @@ export class OptimizeLAZTask extends BaseTask {
           filename: data._outputFiles.las
           // ...data._inputSRS ? { override_srs: data._inputSRS } : {}
         },
+
+
+
         // TODO: move the filtering to a separate step
         // this way we use the cropped/merged LAS file to generate vegetation masks
         // and heat-maps using data we're currently filtering out
 
         // QUESTION: do we want to apply the SMRF filter to all files? or just ones with no classification data?
         // https://pdal.io/en/2.4.3/workshop/exercises/analysis/ground/ground.html
-
-        {
-          type: 'filters.outlier',
-          method: 'statistical',
-          mean_k: 8,
-          multiplier: 3.0,
-        },
-        {
-          type: 'filters.smrf',
-          where: '(Classification == 0)',
-          ignore: 'Classification[7:7]'
-        },
+        ...data.tasksEnabled.filters.smrf ? [
+          {
+            type: 'filters.outlier',
+            method: 'statistical',
+            // mean_k: 8,
+            // multiplier: 3.0,
+          },
+          {
+            type: 'filters.smrf',
+            where: '(Classification == 0)',
+            ignore: 'Classification[7:7]'
+          }
+        ] : [],
         {
           type: 'filters.range',
+          // TODO: make this user-configurable
           // Classification 2 = Ground
           // Classification 9 = Water
           // Classification 6 = Building
