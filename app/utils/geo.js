@@ -8,13 +8,8 @@ const r_earth = 6378;
 
 export function addKilometers(latlng, kilometers, unit) {
   const [lng, lat] = latlng;
-
-  // units: "kilometers",
-  // bboxPolygon(bbox(circle(_circle.center, 0.5, { steps: 64 })))
-
   const meters = kilometers * 1000;
-  if (unit.startsWith('meter') || unit === 'm') {
-    // return [lng + feet(meters), lat + feet(meters)];
+  if (unit.startsWith('met') || unit === 'm') {
     return [lng + meters, lat + meters];
   } else if (unit === 'foot' || unit === 'feet') {
     return [lng + feet(meters), lat + feet(meters)];
@@ -41,7 +36,6 @@ export function reprojectBounds(sourceProj4, destProj4, ...coordinates) {
   return [
     ...coordinates
   ].map(point => {
-    console.log('point', point);
     return proj4(
       sourceProj4,
       destProj4,

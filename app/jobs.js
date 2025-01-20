@@ -197,6 +197,12 @@ export class Job extends EventEmitter {
       }),
       // ] : [],
 
+      ...this.data.tasksEnabled.terrain && this.data.tasksEnabled.overlays.hillshade ? [
+        new GenerateHillShadeImageTask({
+          outputDirectory: overlaysDirectory
+        }),
+      ] : [],
+
       ...(this.data.tasksEnabled.overlays.google || this.data.tasksEnabled.overlays.bing) ? [
         new GenerateSatelliteImageryTask({
           prefix: 'inner',
@@ -243,11 +249,6 @@ export class Job extends EventEmitter {
       ] : [],
 
 
-      ...this.data.tasksEnabled.terrain && this.data.tasksEnabled.overlays.hillshade ? [
-        new GenerateHillShadeImageTask({
-          outputDirectory: overlaysDirectory
-        }),
-      ] : [],
 
       new CreateCSVTask({
         outputDirectory: this.courseDirectory
