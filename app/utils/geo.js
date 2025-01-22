@@ -30,8 +30,16 @@ export const US_FOOT_PER_METER = 3.2808333333;
 const METER_PER_US_FOOT = 0.3048006096;
 const METER_PER_FOOT = 0.3048;
 
-function feetToMeters(feet) {
-  return feet * METER_PER_FOOT;
+// function feetToMeters(feet) {
+//   return feet * METER_PER_FOOT;
+// }
+
+export function feetToMeters(feet) {
+  return feet / FOOT_PER_METER;
+}
+
+export function usSurveyFeetToMeters(feet) {
+  return feet / US_FOOT_PER_METER;
 }
 
 export function metersToFeet(meters) {

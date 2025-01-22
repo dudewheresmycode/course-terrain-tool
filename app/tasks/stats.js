@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 
 import BaseTask from './base.js';
+import { CRSUnits, feetToMeters, usSurveyFeetToMeters } from '../utils/geo.js';
 
 const FEET_PER_METER = 3.28084;
 const PLAIN_TEXT_PADDING = 10;
@@ -103,9 +104,13 @@ export class CreateCSVTask extends BaseTask {
 
     // convert all data to meters
     // if (innerStats.unit === 'feet') {
-    if (data._inputCRS.unit === 'feet') {
+    if (data._inputCRS.unit === CRSUnits.Feet) {
       Object.keys(innerValues).forEach(key => {
-        innerValues[key] = meters(innerValues[key]);
+        innerValues[key] = feetToMeters(innerValues[key]);
+      });
+    } else if (data._inputCRS.unit === CRSUnits.USFeet) {
+      Object.keys(innerValues).forEach(key => {
+        innerValues[key] = usSurveyFeetToMeters(innerValues[key]);
       });
     }
     // distances are always sent in kilometers

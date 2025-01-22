@@ -1,7 +1,41 @@
 import { test } from '@jest/globals';
-import { CRSUnits, addKilometers, detectUnit } from '../app/utils/geo.js';
+import {
+  CRSUnits,
+  addKilometers,
+  detectUnit,
+  feetToMeters,
+  metersToFeet,
+  metersToUSSurveyFeet,
+  usSurveyFeetToMeters
+} from '../app/utils/geo.js';
 
 describe('geo utils', () => {
+
+  test('usSurveyFeetToMeters', () => {
+    const meters = usSurveyFeetToMeters(1000);
+
+    expect(meters).toBe(304.800609604316);
+  });
+
+  test('feetToMeters', () => {
+    const meters = feetToMeters(1000);
+
+    expect(meters).toBe(304.79999024640034);
+  });
+
+
+  test('metersToUSSurveyFeet', () => {
+    const meters = metersToUSSurveyFeet(1000);
+
+    expect(meters).toBe(3280.8333333);
+  });
+
+  test('metersToFeet', () => {
+    const meters = metersToFeet(1000);
+
+    expect(meters).toBe(3280.84);
+  });
+
 
   // US Survey Feet
   test('addKilometers in us-survey-feet', () => {
