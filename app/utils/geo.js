@@ -34,11 +34,11 @@ function feetToMeters(feet) {
   return feet * METER_PER_FOOT;
 }
 
-function metersToFeet(meters) {
+export function metersToFeet(meters) {
   return meters * FOOT_PER_METER;
 }
 
-function metersToUSSurveyFeet(meters) {
+export function metersToUSSurveyFeet(meters) {
   return meters * US_FOOT_PER_METER;
 }
 // US Survey Feet to meters

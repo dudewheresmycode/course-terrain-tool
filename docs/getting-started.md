@@ -50,6 +50,14 @@ Click the **Search Data** button to search our current lidar data sources for da
 If data isn't available for your course via search, you can import LAS or LAZ files directly. 
 
 
-## Setting CRS
+### Setting CRS
 
-A CRS (Coordinate Reference System) is required to be able to process the lidar data. We do our best to automatically detect the CRS of the data when you search or import data, but we can't always determine the CRS automatically. In those cases, you'll need to try and track down the CRS manually. Try looking for files that describe the metadata of the data set. If you have trouble, ask in the Discord channel.
+The CRS (Coordinate Reference System) of each LAS file is required to be able to process the lidar data. 
+
+#### Manually Setting CRS
+
+We do our best to automatically detect the CRS of the data when you search or import data, but we can't always determine the CRS automatically. In these cases, you'll need to try and track down and set the CRS manually. Try googling the project name of the lidar set and looking for links to information for the metadata of that data set. If you have trouble, ask in the Discord channel.
+
+### Exporting
+Once you have data tiles covering your inner/outer areas, you're ready to export your terrain data. The default settings should work in most cases, but you can experiment and customize with each course.
+

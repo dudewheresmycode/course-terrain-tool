@@ -11,7 +11,7 @@ import { getProjInfo, getCRSDetailsForCode } from './gdal.js';
 import { parseLAZPointInfo } from './pdal_utils.js';
 import crsList from '../crs-list.json' with { type: 'json' };
 import { feet } from './stats.js';
-import { epsgLookup, detectUnit, reprojectBounds, WGS84 } from '../utils/geo.js';
+import { epsgLookup, detectUnit, reprojectBounds, WGS84, CRSUnits, metersToFeet, metersToUSSurveyFeet } from '../utils/geo.js';
 
 
 // the projection that our map and course/crop area uses
@@ -124,7 +124,11 @@ async function refreshCRS(existingCRS = {}) {
 
   if (verifyCRS(existingCRS)) {
     log.info('Found valid CRS');
-    return existingCRS;
+    return {
+      ...existingCRS,
+      // we still want to normalize the unit
+      unit: detectUnit(existingCRS.unit)
+    };
   }
 
   if (authority === 'EPSG') {
@@ -392,10 +396,13 @@ export class RasterizeLAZTask extends BaseTask {
     const tiffOutputFile = path.join(this.outputDirectory, `${this.prefix}_laz_${Math.round(this.resolution * 100)}_temp.tif`);
     let resolution = this.resolution;
     // let width = Math.floor(this.distance * 1000);
-    if (data._inputCRS?.unit === 'foot') {
+    if (data._inputCRS?.unit === CRSUnits.Feet) {
       // if CRS is in feet convert the resolution to feet
-      resolution = feet(this.resolution);
+      // resolution = feet(this.resolution);
+      resolution = metersToFeet(this.resolution);
       // width = Math.floor(feet(this.distance * 1000));
+    } else if (data._inputCRS?.unit === CRSUnits.USFeet) {
+      resolution = metersToUSSurveyFeet(this.resolution);
     }
 
     const pipeline = {
