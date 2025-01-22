@@ -8,6 +8,7 @@ import BaseTask from './base.js';
 import { tools } from '../tools/index.js';
 import { OGSApiEndpoint } from '../constants.js';
 import { getProjInfo, getCRSDetailsForCode } from './gdal.js';
+import { parseLAZPointInfo } from './pdal_utils.js';
 import crsList from '../crs-list.json' with { type: 'json' };
 import { feet } from './stats.js';
 import { epsgLookup, detectUnit, reprojectBounds, WGS84 } from '../utils/geo.js';
@@ -105,18 +106,41 @@ export function reprojectBox(sourceProj4, minx, miny, maxx, maxy) {
   });
 }
 
-async function refreshCRSFromCode(source, authority, code) {
+// check that we have the required fields
+function verifyCRS(crs) {
+  return crs?.id?.authority &&
+    crs?.id?.code &&
+    crs?.unit &&
+    crs?.proj4;
+}
+
+async function refreshCRS(existingCRS = {}) {
+  const { authority, code } = existingCRS.id || {};
+  // we at least need a auth/code
+  if (!authority || !code) {
+    log.warn('Could not refresh CRS! (missing authority or code)', existingCRS);
+    return existingCRS;
+  }
+
+  if (verifyCRS(existingCRS)) {
+    log.info('Found valid CRS');
+    return existingCRS;
+  }
 
   if (authority === 'EPSG') {
+    log.info(`Checking EPSG code ${code} in local db`);
     const localMatch = epsgLookup(code);
     if (localMatch) {
       const { code, name, unit, proj4 } = localMatch;
-      return {
-        source,
-        id: { authority, code: code },
+      const newCRS = {
+        ...existingCRS,
+        id: { authority, code },
         name: name,
         proj4,
         unit: detectUnit(unit)
+      }
+      if (verifyCRS(newCRS)) {
+        return newCRS;
       }
     }
   }
@@ -128,13 +152,16 @@ async function refreshCRSFromCode(source, authority, code) {
   }
 
   const gdalinfoResponse = await getCRSDetailsForCode(authority, code);
-  if (gdalinfoResponse) {
-    return {
-      source,
-      name: gdalinfoResponse.name,
+  if (gdalinfoResponse.unit && proj4Info) {
+    const newCRS = {
+      ...existingCRS,
+      name: gdalinfoResponse.name || 'Unknown',
       id: { authority, code },
       unit: detectUnit(gdalinfoResponse.unit),
       proj4: proj4Info
+    }
+    if (verifyCRS(newCRS)) {
+      return newCRS;
     }
   }
 
@@ -151,7 +178,12 @@ async function refreshCRSFromCode(source, authority, code) {
   console.log(crsResponse.results);
   const { name, id, unit } = crsResponse.results[0];
   log.debug(`Found full CRS (${code}) via API`, { name, id, unit });
-  return { source, name, id, unit: detectUnit(unit), proj4: proj4Info }
+  const newCRS = { source, name, id, unit: detectUnit(unit), proj4: proj4Info }
+  if (verifyCRS(newCRS)) {
+    return newCRS;
+  }
+
+  throw new Error('Unable to find all CRS details!');
 }
 
 async function scrapeCRSFromXML(item) {
@@ -186,12 +218,20 @@ async function scrapeCRSFromXML(item) {
   }
   const code = `${localRecord.auth_name}:${localRecord.code}`;
   log.debug(`Found local CRS code ${code} for projection ${projectionName}`);
-  return refreshCRSFromCode('metadata', localRecord.auth_name, localRecord.code);
+  const baseCRS = {
+    source: 'metadata',
+    name: localRecord.name,
+    id: {
+      authority: localRecord.auth_name,
+      code: localRecord.code
+    }
+  };
+  return refreshCRS(baseCRS);
 
 }
 
 async function refreshBounds(item) {
-  if (!item?.crs?.id || !item?.bbox?.coordinates) {
+  if (!item?.crs?.proj4 || !item?.bbox?.coordinates) {
     return {};
   }
 
@@ -207,7 +247,7 @@ async function refreshBounds(item) {
   // }
 
   // item.crs.proj4 = proj4;
-  const newBounds = reprojectBox(proj4Value, ...item.bbox.coordinates);
+  const newBounds = reprojectBox(item.crs.proj4, ...item.bbox.coordinates);
 
   const boundary = {
     'type': 'Feature',
@@ -219,12 +259,25 @@ async function refreshBounds(item) {
   return { boundary };
 }
 
+export async function getLAZPointInfo(inputUri, abortController) {
+  // pdal info --dimensions Classification --filters.stats.count=Classification
+  // pdal info --dimensions ReturnNumber --filters.stats.count=ReturnNumber
+  const infoResponse = await runPDALCommand('info', [
+    '--dimensions', 'Classification,ReturnNumber', '--filters.stats.count=Classification,ReturnNumber',
+    inputUri
+  ], abortController);
+  if (infoResponse?.stats?.statistic?.[0].bins) {
+    return parseLAZPointInfo(infoResponse);
+  }
+}
+
 export async function getLAZInfo(item, abortController) {
   const inputUri = item._file || item.downloadURL;
 
   // we re-run this method when we set a new CRS
   // we skip the PDAL info command if we already grabbed the metadata once and just need to reproject the box
   if (item.crs?.source === 'user') {
+    item.crs = await refreshCRS(item.crs);
     const refresh = await refreshBounds(item);
     // item.crs.proj4 = refresh.proj4;
     item.bbox.boundary = refresh.boundary;
@@ -263,13 +316,15 @@ export async function getLAZInfo(item, abortController) {
     projectedCRS = infoResponse?.metadata?.srs?.json?.components?.find(c => c.type === 'ProjectedCRS');
   }
   if (projectedCRS?.id || projectedCRS?.base_crs) {
-    crs = {
-      unit: detectUnit(infoResponse?.metadata?.srs?.units?.horizontal),
+    // refresh to fill in any gaps
+    crs = await refreshCRS({
+      unit: infoResponse?.metadata?.srs?.units?.horizontal,
       name: projectedCRS.name || projectedCRS?.base_crs?.name,
       id: projectedCRS.id || projectedCRS?.base_crs?.id,
       source: 'laz',
       proj4: infoResponse.metadata.srs.proj4
-    };
+    });
+
     // unit = response?.metadata?.srs?.units;
   }
 
@@ -308,6 +363,7 @@ export async function getLAZInfo(item, abortController) {
       // returnValue.crs.proj4 = proj4;
     }
   }
+
   return returnValue;
 }
 
@@ -487,13 +543,16 @@ export class OptimizeLAZTask extends BaseTask {
   }
 
   async process(data) {
+    const lazInputFile = data._outputFiles.las;
     const lazOutputFile = path.join(this.outputDirectory, 'filtered_laz_outer.las');
 
+    const info = await getLAZPointInfo(lazInputFile, this.abortController);
+    console.log(info);
     const pipeline = {
       pipeline: [
         {
           type: 'readers.las',
-          filename: data._outputFiles.las
+          filename: lazInputFile
           // ...data._inputSRS ? { override_srs: data._inputSRS } : {}
         },
 
@@ -516,24 +575,28 @@ export class OptimizeLAZTask extends BaseTask {
             type: 'filters.smrf'
           }
         ] : [],
-        {
-          type: 'filters.range',
-          // TODO: make this user-configurable
-          // Classification 2 = Ground
-          // Classification 9 = Water
-          // Classification 6 = Building
-          // Classification 10 = Rail
-          // Classification 11 = Road
-          // Source: https://desktop.arcgis.com/en/arcmap/latest/manage-data/las-dataset/lidar-point-classification.htm
-          limits: [
-            // 'Classification[1:1]', // Unclassified
-            'Classification[1.1:2.1]', // Ground
-            'Classification[8.1:9.1]', // Water
-            'Classification[10.1:11.1]', // Road
-            // 'Classification[16.1:17.1]' // Bridges
-          ].join(',') //Z[1.1:2.1],
-          // where: '(Classification != 0)'
-        },
+
+        ...info.hasGroundPoints || data.tasksEnabled.filters.smrf ?
+          [
+            {
+              type: 'filters.range',
+              // TODO: make this user-configurable
+              // Classification 2 = Ground
+              // Classification 9 = Water
+              // Classification 6 = Building
+              // Classification 10 = Rail
+              // Classification 11 = Road
+              // Source: https://desktop.arcgis.com/en/arcmap/latest/manage-data/las-dataset/lidar-point-classification.htm
+              limits: [
+                // 'Classification[1:1]', // Unclassified
+                'Classification[1.1:2.1]', // Ground
+                'Classification[8.1:9.1]', // Water
+                'Classification[10.1:11.1]', // Road
+                // 'Classification[16.1:17.1]' // Bridges
+              ].join(',') //Z[1.1:2.1],
+              // where: '(Classification != 0)'
+            }
+          ] : [],
         {
           type: 'writers.las',
           // compression: true,

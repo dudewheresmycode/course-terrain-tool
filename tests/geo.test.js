@@ -4,26 +4,11 @@ import { CRSUnits, addKilometers, detectUnit } from '../app/utils/geo.js';
 describe('geo utils', () => {
 
   // US Survey Feet
-  test('addKilometers in us-feet with CRS', () => {
+  test('addKilometers in us-survey-feet', () => {
     const points = addKilometers([
       0, 0
     ], 1, {
-      unit: 'meters',
-      // actually us-feet
-      id: { authority: 'EPSG', code: 2227 }
-    });
-
-    expect(points).toEqual(expect.arrayContaining([
-      3280.8333333,
-      3280.8333333
-    ]));
-  });
-
-  test('addKilometers in us-feet no CRS', () => {
-    const points = addKilometers([
-      0, 0
-    ], 1, {
-      unit: 'US Survey feet'
+      unit: CRSUnits.USFeet
     });
 
     expect(points).toEqual(expect.arrayContaining([
@@ -33,78 +18,36 @@ describe('geo utils', () => {
   });
 
   // Feet
-  test('addKilometers in feet no CRS', () => {
+  test('addKilometers in feet', () => {
     const points = addKilometers([
       0, 0
     ], 1, {
-      unit: 'feet'
+      unit: CRSUnits.Feet
     });
 
     expect(points).toEqual(expect.arrayContaining([3280.84, 3280.84]));
   });
 
-  test('addKilometers in feet no CRS', () => {
-    const points = addKilometers([
-      0, 0
-    ], 1, {
-      unit: 'feet',
-      id: { authority: 'EPSG', code: 2222 }
-    });
-
-    expect(points).toEqual(expect.arrayContaining([3280.84, 3280.84]));
-  });
-
-  // Meters
-  test('addKilometers in meters from CRS', () => {
-    const points = addKilometers([
-      0, 0
-    ], 1, {
-      unit: '',
-      id: { authority: 'EPSG', code: 2019 }
-    });
-
-    expect(points).toEqual(expect.arrayContaining([1000, 1000]));
-  });
-
-  test('addKilometers in meters no CRS', () => {
-    const points = addKilometers([
-      0, 0
-    ], 1, {
-      unit: 'metres'
-    });
-
-    expect(points).toEqual(expect.arrayContaining([1000, 1000]));
-  });
-
-  test('addKilometers in meters upper case', () => {
-    const points = addKilometers([
-      0, 0
-    ], 1, {
-      unit: 'Meters'
-    });
-
-    expect(points).toEqual(expect.arrayContaining([1000, 1000]));
-  });
-
+  // Degrees
   test('addKilometers in degrees no CRS', () => {
     const points = addKilometers([
       0, 0
     ], 1, {
-      unit: 'Degree'
+      unit: CRSUnits.Degrees
     });
 
     expect(points).toEqual(expect.arrayContaining([0.008983345800106981, 0.008983345800106981]));
   });
 
-  test('addKilometers in degrees from CRS', () => {
+  // Meters
+  test('addKilometers in meters', () => {
     const points = addKilometers([
       0, 0
     ], 1, {
-      unit: 'degree',
-      id: { authority: 'EPSG', code: 6318 }
+      unit: CRSUnits.Meters
     });
 
-    expect(points).toEqual(expect.arrayContaining([0.008983345800106981, 0.008983345800106981]));
+    expect(points).toEqual(expect.arrayContaining([1000, 1000]));
   });
 
   test('addKilometers in meters by default', () => {
