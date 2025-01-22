@@ -82,7 +82,7 @@ describe('pdal tests', () => {
     }))
   });
 
-  test.only('parseLAZPointInfo without classifications', () => {
+  test('parseLAZPointInfo without classifications', () => {
     const info = parseLAZPointInfo({
       "file_size": 78286494,
       "filename": "/Users/brianrobinson/Projects/Personal/course-builds/TestEverything/Downloads/USGS_LPC_CA_SANTACLARACO_A_2006_000063.laz",
