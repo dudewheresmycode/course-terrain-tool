@@ -50,6 +50,10 @@ export default function Sidebar(props) {
     if (hasUnknownCRS) {
       return alert("You have a data source with an unknown CRS! Please set it first.");
     }
+    setJobError(false);
+    setIsJobCanceled(false);
+    setJobState(null);
+    setJobWarnings(undefined);
     setJobDialogOpen(true);
   }
 

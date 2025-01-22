@@ -7,10 +7,10 @@ import { create as xmlToObject } from 'xmlbuilder2';
 import BaseTask from './base.js';
 import { tools } from '../tools/index.js';
 import { OGSApiEndpoint } from '../constants.js';
-import { getProjInfo } from './gdal.js';
+import { getProjInfo, getCRSDetailsForCode } from './gdal.js';
 import crsList from '../crs-list.json' with { type: 'json' };
 import { feet } from './stats.js';
-import { reprojectBounds, WGS84 } from '../utils/geo.js';
+import { epsgLookup, detectUnit, reprojectBounds, WGS84 } from '../utils/geo.js';
 
 
 // the projection that our map and course/crop area uses
@@ -105,6 +105,55 @@ export function reprojectBox(sourceProj4, minx, miny, maxx, maxy) {
   });
 }
 
+async function refreshCRSFromCode(source, authority, code) {
+
+  if (authority === 'EPSG') {
+    const localMatch = epsgLookup(code);
+    if (localMatch) {
+      const { code, name, unit, proj4 } = localMatch;
+      return {
+        source,
+        id: { authority, code: code },
+        name: name,
+        proj4,
+        unit: detectUnit(unit)
+      }
+    }
+  }
+
+  // try using GDAL and the code
+  const proj4Info = await getProjInfo(authority, code);
+  if (!proj4Info) {
+    log.warn('Unable to get proj4 details using PDAL!');
+  }
+
+  const gdalinfoResponse = await getCRSDetailsForCode(authority, code);
+  if (gdalinfoResponse) {
+    return {
+      source,
+      name: gdalinfoResponse.name,
+      id: { authority, code },
+      unit: detectUnit(gdalinfoResponse.unit),
+      proj4: proj4Info
+    }
+  }
+
+  // fallback to our custom API to fetch the CRS details
+  const csrFetchUrl = `${OGSApiEndpoint}/csr/search?${new URLSearchParams({ query: code })}`;
+  log.debug(`Searching found CRS code (${code}) for full CRS via API`);
+  const crsResponse = await fetch(csrFetchUrl).then(res => res.json());
+  if (!crsResponse.results?.length) {
+    log.warn(`Unable to lookup full CRS by code: ${code}`);
+    // should we bail?
+    // return crs;
+    // return { source, name: 'Unknown', id: { authority, code }, unit: '', proj4: proj4Info }
+  }
+  console.log(crsResponse.results);
+  const { name, id, unit } = crsResponse.results[0];
+  log.debug(`Found full CRS (${code}) via API`, { name, id, unit });
+  return { source, name, id, unit: detectUnit(unit), proj4: proj4Info }
+}
+
 async function scrapeCRSFromXML(item) {
   if (!item.metaUrl) {
     return;
@@ -137,35 +186,28 @@ async function scrapeCRSFromXML(item) {
   }
   const code = `${localRecord.auth_name}:${localRecord.code}`;
   log.debug(`Found local CRS code ${code} for projection ${projectionName}`);
+  return refreshCRSFromCode('metadata', localRecord.auth_name, localRecord.code);
 
-  // use our custom API to fetch the full CRS details
-  const csrFetchUrl = `${OGSApiEndpoint}/csr/search?${new URLSearchParams({ query: code })}`;
-  log.debug(`Searching found CRS code (${code}) for full CRS via API`);
-  const crsResponse = await fetch(csrFetchUrl).then(res => res.json());
-  if (!crsResponse.results?.length) {
-    log.warn(`Unable to lookup full CRS by code: ${code}`);
-    return;
-  }
-  const { name, id, unit } = crsResponse.results[0];
-  log.debug(`Found full CRS (${code}) via API`, { name, id, unit });
-  return {
-    source: 'meta',
-    name,
-    id,
-    unit
-  };
 }
 
-async function refreshBounds(item, proj4) {
+async function refreshBounds(item) {
   if (!item?.crs?.id || !item?.bbox?.coordinates) {
     return {};
   }
-  if (!proj4) {
-    proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
-  }
+
+  // let proj4Value;
+  // if (item.crs.id.authority === 'EPSG') {
+  //   const localLookup = epsgLookup(item.crs.id.code);
+  //   if (localLookup.proj4) {
+  //     proj4Value = localLookup.proj4;
+  //   }
+  // }
+  // if (!proj4Value) {
+  //   proj4Value = await getProjInfo(item.crs.id.authority, item.crs.id.code);
+  // }
 
   // item.crs.proj4 = proj4;
-  const newBounds = reprojectBox(proj4, ...item.bbox.coordinates);
+  const newBounds = reprojectBox(proj4Value, ...item.bbox.coordinates);
 
   const boundary = {
     'type': 'Feature',
@@ -174,7 +216,7 @@ async function refreshBounds(item, proj4) {
       'coordinates': [newBounds]
     }
   };
-  return { boundary, proj4 };
+  return { boundary };
 }
 
 export async function getLAZInfo(item, abortController) {
@@ -184,7 +226,7 @@ export async function getLAZInfo(item, abortController) {
   // we skip the PDAL info command if we already grabbed the metadata once and just need to reproject the box
   if (item.crs?.source === 'user') {
     const refresh = await refreshBounds(item);
-    item.crs.proj4 = refresh.proj4;
+    // item.crs.proj4 = refresh.proj4;
     item.bbox.boundary = refresh.boundary;
     // const proj4 = await getProjInfo(item.crs.id.authority, item.crs.id.code);
     return item;
@@ -204,6 +246,8 @@ export async function getLAZInfo(item, abortController) {
   let infoResponse;
   let crs = item.crs;
 
+  // QUESTION: Should we do XML scraping first? It's faster.
+  // So if it proves reliable we should do it first and fallback to inspecting the remote laz
   if (!crs) {
     try {
       log.debug('Using PDAL info to check the remote LAZ file headers for a CRS', inputUri);
@@ -220,7 +264,7 @@ export async function getLAZInfo(item, abortController) {
   }
   if (projectedCRS?.id || projectedCRS?.base_crs) {
     crs = {
-      unit: infoResponse?.metadata?.srs?.units?.horizontal,
+      unit: detectUnit(infoResponse?.metadata?.srs?.units?.horizontal),
       name: projectedCRS.name || projectedCRS?.base_crs?.name,
       id: projectedCRS.id || projectedCRS?.base_crs?.id,
       source: 'laz',
@@ -259,9 +303,9 @@ export async function getLAZInfo(item, abortController) {
     const scraped = await scrapeCRSFromXML(item);
     if (scraped) {
       returnValue.crs = scraped;
-      const { boundary, proj4 } = await refreshBounds({ ...item, crs: scraped });
+      const { boundary } = await refreshBounds({ ...item, crs: scraped });
       returnValue.bbox.boundary = boundary;
-      returnValue.crs.proj4 = proj4;
+      // returnValue.crs.proj4 = proj4;
     }
   }
   return returnValue;
@@ -375,8 +419,8 @@ export class MergeLAZTask extends BaseTask {
     // crop area
     // const cropWKT = `POLYGON ((${this.coordinates.map(coord => coord.join(' ')).join(', ')}))`;
     // re-project crop area from wgs84 to the source CRS
-    const nativeCoordinates = reprojectBounds(WGS84, data._inputCRS.proj4, ...this.coordinates);
-    console.log('nativeCoordinates', nativeCoordinates);
+    // const nativeCoordinates = reprojectBounds(WGS84, data._inputCRS.proj4, ...this.coordinates);
+    // console.log('nativeCoordinates', nativeCoordinates);
     // const cropWKT = `POLYGON ((${nativeCoordinates.map(coord => coord.join(' ')).join(', ')}))`;
 
     const pipeline = {
@@ -460,7 +504,7 @@ export class OptimizeLAZTask extends BaseTask {
         // and heat-maps using data we're currently filtering out
 
         // QUESTION: do we want to apply the SMRF filter to all files? or just ones with no classification data?
-        // https://pdal.io/en/2.4.3/workshop/exercises/analysis/ground/ground.html
+        // Values derived from: https://pdal.io/en/2.4.3/workshop/exercises/analysis/ground/ground.html
         ...data.tasksEnabled.filters.smrf ? [
           {
             type: 'filters.outlier',

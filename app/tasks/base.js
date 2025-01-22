@@ -7,7 +7,6 @@ export default class BaseTask extends EventEmitter {
     this.child = null;
     this.canceled = false;
     this.abortController = new AbortController();
-
     // set to test a step but stop and don't continue to the next steps
     // this.exitOnComplete = false;
   }

@@ -16,6 +16,7 @@ export default [
     rules: {
       'prefer-const': 'warn',
       'no-console': 'off',
+      'no-undef': 'on',
       'no-unused-vars': 'warn',
       quotes: [2, 'single', { avoidEscape: true }],
     },

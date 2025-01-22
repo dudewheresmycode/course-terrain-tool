@@ -19,7 +19,7 @@ const r_earth = 6378;
 export const CRSUnits = {
   Feet: 'feet',
   // us survey foot
-  USFeet: 'us-feet',
+  USFeet: 'us-survey-feet',
   Meters: 'meters',
   Degrees: 'degrees'
 };
@@ -73,26 +73,26 @@ export function addKilometers(latlng, kilometers, crs) {
   // how many meters the inner/outer box is
   const meters = kilometers * 1000;
 
-  let rawUnit = crs.unit;
+  // let rawUnit = crs.unit;
   // first we try and normalize any EPSG-based CRS cors by using our internal list of units
-  if (crs?.id?.authority === 'EPSG' && crs?.id?.code) {
-    const epsg = epsgLookup(crs.id.code)
-    if (epsg?.unit) {
-      log.info(`Found EPSG code. Overriding unit from ${rawUnit} to ${epsg.unit}`);
-      rawUnit = epsg.unit;
-    }
-  }
-  log.debug(`Attempting to parse unit ${rawUnit}`);
+  // if (crs?.id?.authority === 'EPSG' && crs?.id?.code) {
+  //   const epsg = epsgLookup(crs.id.code)
+  //   if (epsg?.unit) {
+  //     log.info(`Found EPSG code. Overriding unit from ${rawUnit} to ${epsg.unit}`);
+  //     rawUnit = epsg.unit;
+  //   }
+  // }
+  // log.debug(`Attempting to parse unit ${rawUnit}`);
   // const isUSFoot = /survey foot|feet|ft/i.test(unit);
   // const isFoot = /foot|feet|ft/i.test(unit);
-  const crsUnit = detectUnit(rawUnit);
-  log.debug(`Parsed unit: ${crsUnit}`);
+  // const crsUnit = detectUnit(rawUnit);
+  // log.debug(`Parsed unit: ${crsUnit}`);
 
-  if (crsUnit === CRSUnits.USFeet) {
+  if (crs.unit === CRSUnits.USFeet) {
     return [lng + metersToUSSurveyFeet(meters), lat + metersToUSSurveyFeet(meters)];
-  } else if (crsUnit === CRSUnits.Feet) {
+  } else if (crs.unit === CRSUnits.Feet) {
     return [lng + metersToFeet(meters), lat + metersToFeet(meters)];
-  } else if (crsUnit === CRSUnits.Degrees) {
+  } else if (crs.unit === CRSUnits.Degrees) {
     const new_longitude = lng + (kilometers / r_earth) * (180 / Math.PI) / Math.cos(lat * Math.PI / 180);
     const new_latitude = lat + (kilometers / r_earth) * (180 / Math.PI);
     return [new_longitude, new_latitude];

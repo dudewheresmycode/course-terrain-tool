@@ -98,6 +98,7 @@ export class Job extends EventEmitter {
       this.data._inputCRS.proj4,
       this.data.coordinates.center
     );
+    log.debug('nativeCenter', nativeCenter);
 
     // calculate a new bounding box in the native coordinate system
     // NOTE: the box we define on the map is just a guide and won't be perfectly accurate to the actual box
@@ -349,7 +350,11 @@ export class JobQueue extends EventEmitter {
     if (!this.activeJob) {
       return;
     }
-    this.activeJob.cancel();
+    try {
+      this.activeJob.cancel();
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async runJob() {

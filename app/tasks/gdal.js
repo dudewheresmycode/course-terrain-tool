@@ -59,6 +59,10 @@ export function runGDALCommand(binName, args, options = {}) {
         output += data.toString();
       }
     });
+    child.on('error', error => {
+      log.error('[gdal] process error:', error);
+      return reject(error);
+    });
     child.on('close', (exitCode) => {
       log.debug(`exited with code : ${exitCode}`);
       if (exitCode !== 0) {
@@ -71,6 +75,21 @@ export function runGDALCommand(binName, args, options = {}) {
 
 export function getProjInfo(authority, code) {
   return runGDALCommand(GDAL_BINARIES.projinfo, [[authority, code].join(':'), '-o', 'PROJ', '-q']);
+}
+
+export async function getCRSDetailsForCode(authority, code) {
+  const stdout = await runGDALCommand(GDAL_BINARIES.projinfo, [[authority, code].join(':'), '-o', 'PROJJSON', '-q']);
+  try {
+    const data = JSON.parse(stdout);
+    console.log(data.coordinate_system.axis[0]);
+    return {
+      name: data.name,
+      id: { authority, code },
+      unit: data.coordinate_system.axis[0].unit.name
+    }
+  } catch (error) {
+    log.error('Error parsing CRS from projinfo command', error);
+  }
 }
 
 export class GeoTiffStatsTask extends BaseTask {

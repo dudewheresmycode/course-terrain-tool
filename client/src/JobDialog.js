@@ -291,6 +291,11 @@ export default function JobDialog(props) {
   //   });
   // }, [props.outerDistance]);
 
+  useEffect(() => {
+    if (!props.open) {
+      setOutputFolder('');
+    }
+  }, [props.open]);
   return (
     <Dialog
       scroll="paper"

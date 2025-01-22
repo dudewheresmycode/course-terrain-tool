@@ -118,6 +118,8 @@ describe('geo utils', () => {
 
   test.each([
     // ['USfeet', CRSUnits.USFeet],
+    ['survey foot', CRSUnits.USFeet],
+    ['survey feet', CRSUnits.USFeet],
     ['us survey feet', CRSUnits.USFeet],
     ['US survey Feet', CRSUnits.USFeet],
     ['US survey foot', CRSUnits.USFeet],
@@ -131,6 +133,7 @@ describe('geo utils', () => {
     ['Meters', CRSUnits.Meters],
     ['meters', CRSUnits.Meters],
     ['meteres', CRSUnits.Meters],
+    ['metre', CRSUnits.Meters],
     ['metres', CRSUnits.Meters],
     ['m', CRSUnits.Meters],
 

@@ -132,7 +132,6 @@ app.whenReady().then(async () => {
     log.debug('Submitting job with data:', jobData);
     const job = jobQueue.add(jobData);
     job.on('progress', progress => {
-      log.info('Job Progress', progress);
       event.sender.send('job-progress', progress);
     });
     job.on('error', error => {
@@ -147,7 +146,11 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('cancel-job', async (event) => {
     log.info('Canceling job app...');
-    await jobQueue.cancelJob();
+    try {
+      await jobQueue.cancelJob();
+    } catch (error) {
+      log.warn(error);
+    }
   });
 
   ipcMain.handle('import-files', async (event) => {

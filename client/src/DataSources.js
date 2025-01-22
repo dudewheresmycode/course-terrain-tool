@@ -138,12 +138,11 @@ function DataListItem(props) {
           item._pending ? (
             <FauxTinyButon>Loading...</FauxTinyButon>
           ) :
-            item.crs?.id ?
+            item.crs?.id?.authority && item.crs?.id?.code ?
               (<FauxTinyButon component="span">
                 {
                   [
-                    item.crs?.id && `${item.crs.id.authority}:${item.crs.id.code}`,
-                    item.crs?.name
+                    `${item.crs.id.authority}:${item.crs.id.code}`
                   ].filter(Boolean).join(' ')
                 }
               </FauxTinyButon>)
