@@ -6,6 +6,9 @@ export default [
   {
     // TODO: setup separate React lint rules
     ignores: ['client/'],
+    env: {
+      'jest/globals': true
+    },
   },
   js.configs.recommended,
   {

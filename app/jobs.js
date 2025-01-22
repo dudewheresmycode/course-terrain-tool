@@ -2,6 +2,7 @@ import path from 'path';
 import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
 import log from 'electron-log';
+import proj4 from 'proj4';
 
 
 import { CreateDirectoryTask } from './tasks/directory.js';
@@ -17,7 +18,7 @@ import {
   GenerateHillShadeImageTask,
   GenerateShapefilesTask
 } from './tasks/gdal.js';
-import { addKilometers, getBoundsForDistance, reprojectBounds, WGS84 } from './utils/geo.js';
+import { addKilometers, getBoundsForDistance, reprojectBounds, EPSG_4326, WGS84 } from './utils/geo.js';
 
 const JobStates = {
   Queued: 'queued',
@@ -49,7 +50,6 @@ export class Job extends EventEmitter {
     this.progress = { id, label, percent };
     this.emit('progress', this.progress);
     // this.update();
-    log.info(`[${id}]${percent ? '[' + percent.toFixed(1) + '%]' : ''} ${label}`);
   }
 
   cancel() {
@@ -89,20 +89,25 @@ export class Job extends EventEmitter {
     this.data._inputCRS = first.crs;
     const code = `${first.crs.id.authority}:${first.crs.id.code}`;
     this.data._inputSRS = code;
+
     this.data._containsMixedProjections = this.data.dataSource.items.some(item => this.data._inputSRS !== code);
 
     // re-project the center point to our data source's CRS
-    const [nativeCenter] = reprojectBounds(WGS84, this.data._inputCRS.proj4, this.data.coordinates.center);
+    const nativeCenter = proj4(
+      EPSG_4326,
+      this.data._inputCRS.proj4,
+      this.data.coordinates.center
+    );
 
     // calculate a new bounding box in the native coordinate system
-    // NOTE: the box you defined on the map is just a guide and won't be perfectly accurate to the actual box
-    // but we'll use this calculated box for every step so that all assets should line up
+    // NOTE: the box we define on the map is just a guide and won't be perfectly accurate to the actual box
+    // but we'll use this calculated box for every step so that all assets should line up later
     this.data._bounds = {
       center: nativeCenter,
       // inner: nativeInner,
-      inner: getBoundsForDistance(nativeCenter, this.data.distance, this.data._inputCRS.unit),
+      inner: getBoundsForDistance(nativeCenter, this.data.distance, this.data._inputCRS),
       ...this.data.outerDistance ? {
-        outer: getBoundsForDistance(nativeCenter, this.data.distance + this.data.outerDistance, this.data._inputCRS.unit),
+        outer: getBoundsForDistance(nativeCenter, this.data.distance + this.data.outerDistance, this.data._inputCRS),
         // outer: nativeOuter
       } : {}
     };
@@ -271,8 +276,12 @@ export class Job extends EventEmitter {
       });
 
       const started = Date.now();
-      log.info(`Running task ${task.id}`);
-      this.updateProgress({ id: task.id, label: task.label || `Running the task ${task.id}` });
+
+      const label = task.label || `Running the task ${task.id}`;
+
+      log.info(`[${task.id}] ${label}`);
+
+      this.updateProgress({ id: task.id, label });
       // run task
       try {
         await task.process(this.data);
@@ -288,6 +297,9 @@ export class Job extends EventEmitter {
           pipelineWarnings.push(`${error.message}`);
           continue;
         }
+        // log the full job data
+        log.error(`---------------\nJob Data:\n${JSON.stringify(this.data, null, 1)}`);
+
         log.error(`[${task.id}] Task error!`, error);
         pipelineError = error?.message || `An unknown error occurred during the ${task.id} task`;
         this.emit('error', pipelineError);

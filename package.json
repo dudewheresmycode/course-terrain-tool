@@ -40,7 +40,7 @@
     "app:debug": "DEBUG=electron-builder electron-builder --dir",
     "app:dir": "electron-builder --dir",
     "app:dist": "electron-builder --publish never",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "client": "concurrently --kill-others  'npm run debug --workspace=client' 'npm run start -- devserver'",
     "_server": "npm start --workspace=server",
     "build": "npm run build --workspace=client",
@@ -57,6 +57,7 @@
     "electron-builder": "^25.1.8",
     "eslint": "^9.17.0",
     "globals": "^15.14.0",
+    "jest": "^29.7.0",
     "package-version-git-tag": "^2.0.3"
   },
   "dependencies": {
@@ -64,6 +65,7 @@
     "electron-is-dev": "^3.0.1",
     "electron-log": "^5.2.4",
     "electron-updater": "^6.3.9",
+    "epsg-index": "^2.0.0",
     "express": "^4.21.2",
     "express-ws": "^5.0.2",
     "p-map": "^7.0.3",

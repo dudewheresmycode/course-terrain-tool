@@ -13,6 +13,12 @@ function nearest(val) {
 /**
  * Converts meters to feet
  */
+export function usFeet(meters) {
+  return FEET_PER_METER * meters;
+}
+/**
+ * Converts meters to feet
+ */
 export function feet(meters) {
   return FEET_PER_METER * meters;
 }

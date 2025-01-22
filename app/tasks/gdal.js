@@ -324,6 +324,8 @@ export class GenerateHillShadeImageTask extends BaseTask {
 export class GenerateShapefilesTask extends BaseTask {
   constructor({ prefix, outputDirectory, coordinates, tasksEnabled }) {
     super();
+    this.id = 'shapefiles';
+    this.label = `Generating ${prefix} shapefiles`;
     this.prefix = prefix;
     this.outputDirectory = outputDirectory;
     this.coordinates = coordinates;

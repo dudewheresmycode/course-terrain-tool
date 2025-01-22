@@ -465,13 +465,11 @@ export class OptimizeLAZTask extends BaseTask {
           {
             type: 'filters.outlier',
             method: 'statistical',
-            // mean_k: 8,
-            // multiplier: 3.0,
+            mean_k: 8,
+            multiplier: 3.0,
           },
           {
-            type: 'filters.smrf',
-            where: '(Classification == 0)',
-            ignore: 'Classification[7:7]'
+            type: 'filters.smrf'
           }
         ] : [],
         {
