@@ -31,6 +31,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Run unit tests
+        run: npm test
+
       - name: Build/release MacOS Electron app
         if: ${{ startsWith(matrix.os, 'macos') }}
         uses: samuelmeuli/action-electron-builder@v1
