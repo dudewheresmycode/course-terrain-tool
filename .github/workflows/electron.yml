@@ -25,7 +25,7 @@ jobs:
   release:
     name: Building Release
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    needs: build
+    needs: tests
     runs-on: ${{ matrix.os }}
 
     strategy:
