@@ -1,6 +1,5 @@
 ---
 title: Contributing
-nav_order: 3
 ---
 
 # Contributing
