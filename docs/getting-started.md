@@ -26,15 +26,15 @@ Start by downloading the latest version from our [releases page](https://github.
 
 <img src="images/setup-screen.jpg" width="400" />
 
-The first time you launch CTT, you'll likely be presented with a prompt to install some required tools. We recommend clicking the Install Required Tools and using our built-in installer. But if you have trouble, or prefer to do things manually, you can opt to install the [required libraries](/libraries) yourself. Then simply relaunch CTT and we should detect the tools on your system.
-
+The first time you launch CTT, you'll likely be presented with a prompt to install some [required tools](/libraries). We recommend clicking the **Install Required Tools** button and letting our built-in installer run (be patient, this process can take a little while). But if you have trouble, or prefer to do things manually, you can opt to [manually install](/libraries#manually-install-required-tools) the required libraries yourself. Then simply relaunch CTT and we should detect the tools on your system.
 
 
 ### Setting The Center Point
 
 There's two ways to set the center point on the map.
-1. **Shift-Click**: Set the center point on the map by holding shift while left-clicking.
-2. **Search Box**: Enter a latitude / longitude in the search box and 
+1. **Shift-Click**: Set the center point by holding shift while left-clicking on the map.
+2. **Search Box**: Or you can enter a latitude / longitude in the search box and select the `Set Center As` option.
+
     <img src="images/set-center.jpg" width="250" />
 
 ### Setting inner/outer
