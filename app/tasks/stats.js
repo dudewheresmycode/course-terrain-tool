@@ -141,8 +141,8 @@ export class CreateCSVTask extends BaseTask {
 
       rows.push(['Outer Terrain', 'Meters', 'Feet']);
       rows.push(['Outer Size', ...formatValues(outerValues.distance)])
-      rows.push(['Outer Min', ...formatValues(outerValues.max)])
-      rows.push(['Outer Max', ...formatValues(outerValues.min)])
+      rows.push(['Outer Min', ...formatValues(outerValues.min)])
+      rows.push(['Outer Max', ...formatValues(outerValues.max)])
       rows.push(['Outer Height', ...formatValues(outerValues.height)])
 
       rows.push(['', '']);
