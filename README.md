@@ -1,6 +1,6 @@
 ## Course Terrain Tool (beta)
 
-The **Course Terrain Tool** is a desktop application designed to automate lidar/terrain sourcing and creation for building [OPCD](https://zerosandonesgcd.com/opcd-course-creation/) courses.
+The **Course Terrain Tool** is a desktop application designed to automate lidar/terrain sourcing and simulator course creation.
 
 ### Features
 
